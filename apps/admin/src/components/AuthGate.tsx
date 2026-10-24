@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
+import { WhaleLoader } from "@/components/brand/WhaleLoader";
 import { ADMIN_ROLES, authApi, type Me } from "@/lib/api";
 
 const MeContext = createContext<Me | null>(null);
@@ -32,7 +33,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (!state.checked) {
-    return <p className="p-8 text-sm text-ink-faint">로그인 확인 중…</p>;
+    return <WhaleLoader size="lg" label="로그인을 확인하는 중이에요" className="min-h-screen" />;
   }
   if (!state.me) {
     return (

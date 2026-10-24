@@ -1,0 +1,10 @@
+**/node_modules
+**/.next
+**/.turbo
+apps/api
+.git
+.playwright-mcp
+docs
+*.png
+*.svg
+!apps/**/*.svg

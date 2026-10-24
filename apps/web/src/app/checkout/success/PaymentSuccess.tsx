@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { WhaleLoader } from "@/components/brand/WhaleLoader";
 import { ClientApiError, orderApi, type OrderDetail } from "@/lib/client-api";
 import { formatWon } from "@/lib/format";
 
@@ -53,7 +54,7 @@ export function PaymentSuccess() {
   }
 
   if (!order) {
-    return <p className="py-16 text-center text-sm text-ink-faint">결제를 확인하고 있습니다. 창을 닫지 마세요…</p>;
+    return <WhaleLoader size="lg" label="결제를 확인하고 있어요. 창을 닫지 마세요" />;
   }
 
   return (

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { WhaleLoader } from "@/components/brand/WhaleLoader";
 import { Thumb } from "@/components/Thumb";
 import {
   ApiError,
@@ -46,7 +47,7 @@ export function AdminOrderDetail({ orderNo }: { orderNo: string }) {
   }
 
   if (!order) {
-    return <p className="text-sm text-ink-faint">{notice?.text ?? "불러오는 중…"}</p>;
+    return notice ? <p className="text-sm text-danger">{notice.text}</p> : <WhaleLoader label="주문을 불러오는 중이에요" />;
   }
 
   const statuses = new Set(order.items.map((i) => i.status));

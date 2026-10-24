@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { WhaleLoader } from "@/components/brand/WhaleLoader";
 import { draftFromProduct, draftToFields, ProductFieldsEditor, type ProductDraft } from "@/components/ProductFieldsEditor";
 import { emptySku, SkuDraftRow, skuDraftToRequest, validateSkuDraft, type SkuDraft } from "@/components/SkuDraftRow";
 import { StatusChip } from "@/components/StatusChip";
@@ -57,7 +58,7 @@ export function ProductEditor({ id, created }: { id: number; created: boolean })
   }, [reload]);
 
   if (loadError) return <p className="rounded bg-danger/10 p-3 text-sm text-danger">{loadError}</p>;
-  if (!product) return <p className="text-sm text-ink-faint">불러오는 중…</p>;
+  if (!product) return <WhaleLoader />;
 
   const show = (kind: "ok" | "error", text: string) => setNotice({ kind, text });
 

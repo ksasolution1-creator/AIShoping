@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { WhaleLoader } from "@/components/brand/WhaleLoader";
 import { ProductList } from "./ProductList";
 
 // 관리자 영역은 로그인 확인 뒤에 그리므로 즉시 이동 검증에서 뺀다 ((console)/layout.tsx 참고)
@@ -18,7 +19,7 @@ export default function ProductsPage() {
           + 상품 등록
         </Link>
       </div>
-      <Suspense fallback={<p className="text-sm text-ink-faint">불러오는 중…</p>}>
+      <Suspense fallback={<WhaleLoader />}>
         <ProductList />
       </Suspense>
     </div>

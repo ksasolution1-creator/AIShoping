@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { WhaleLoader } from "@/components/brand/WhaleLoader";
 import { TextField } from "@/components/AuthCard";
 import { authApi, ClientApiError, type Me } from "@/lib/client-api";
 
@@ -41,7 +42,7 @@ export default function MyPage() {
     }
   }
 
-  if (!me) return <p className="py-10 text-sm text-ink-faint">불러오는 중…</p>;
+  if (!me) return <WhaleLoader />;
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-8 py-8">

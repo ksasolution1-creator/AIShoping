@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { WhaleLoader } from "@/components/brand/WhaleLoader";
+
 import {
   ApiError,
   CLAIM_STATUS_LABEL,
@@ -105,7 +107,11 @@ export function ClaimBoard() {
         {data && data.items.length === 0 && (
           <li className="card px-4 py-12 text-center text-sm text-ink-faint">처리할 건이 없습니다.</li>
         )}
-        {!data && <li className="text-sm text-ink-faint">불러오는 중…</li>}
+        {!data && (
+          <li>
+            <WhaleLoader />
+          </li>
+        )}
       </ul>
     </div>
   );

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { WhaleLoader } from "@/components/brand/WhaleLoader";
 import { ProductImage } from "@/components/ProductImage";
 import { cartApi, ClientApiError, loginUrl, type CartView } from "@/lib/client-api";
 import { formatWon } from "@/lib/format";
@@ -33,7 +34,7 @@ export default function CartPage() {
   }
 
   if (!cart) {
-    return <p className="py-10 text-sm text-ink-faint">{error ?? "불러오는 중…"}</p>;
+    return error ? <p className="py-10 text-sm text-sale">{error}</p> : <WhaleLoader label="장바구니를 불러오는 중이에요" />;
   }
 
   const buyable = cart.items.filter((i) => i.purchasable);

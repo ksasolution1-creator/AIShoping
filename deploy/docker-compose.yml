@@ -1,0 +1,99 @@
+# 떨고래 마켓 테스트/운영 서버 구성
+# 실행: cd deploy && cp .env.example .env (값 채우기) && docker compose up -d --build
+name: ddgorae
+
+services:
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aishop
+      POSTGRES_USER: aishop
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD를 .env에 넣어 주세요}
+      TZ: Asia/Seoul
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aishop -d aishop"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+
+  api:
+    build: ../apps/api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/aishop
+      DB_USERNAME: aishop
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      SESSION_COOKIE_SECURE: "true"
+      FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY:?FIELD_ENCRYPTION_KEY를 .env에 넣어 주세요}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      TOSS_CLIENT_KEY: ${TOSS_CLIENT_KEY:-}
+      TOSS_SECRET_KEY: ${TOSS_SECRET_KEY:-}
+      TZ: Asia/Seoul
+    volumes:
+      - uploads:/app/uploads
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/next.Dockerfile
+      args:
+        APP: web
+    restart: unless-stopped
+    depends_on: [api]
+    environment:
+      PORT: "3000"
+      API_URL: http://api:18080
+
+  admin:
+    build:
+      context: ..
+      dockerfile: deploy/next.Dockerfile
+      args:
+        APP: admin
+        NEXT_PUBLIC_SHOP_URL: https://${SHOP_DOMAIN}
+    restart: unless-stopped
+    depends_on: [api]
+    environment:
+      PORT: "3001"
+      API_URL: http://api:18080
+
+  # HTTPS 인증서(Let's Encrypt) 자동 발급·갱신 + 도메인별 연결
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [web, admin]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SHOP_DOMAIN: ${SHOP_DOMAIN:?SHOP_DOMAIN을 .env에 넣어 주세요}
+      ADMIN_DOMAIN: ${ADMIN_DOMAIN:?ADMIN_DOMAIN을 .env에 넣어 주세요}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  postgres-data:
+  redis-data:
+  uploads:
+  caddy-data:
+  caddy-config:

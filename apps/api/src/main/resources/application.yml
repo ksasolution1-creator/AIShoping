@@ -30,6 +30,8 @@ spring:
 
 server:
   port: ${PORT:18080}
+  # Caddy·Next.js 뒤에서 고객 실제 IP(X-Forwarded-For)를 쓴다. API 포트는 외부에 열지 않는다.
+  forward-headers-strategy: framework
 
 management:
   endpoints:

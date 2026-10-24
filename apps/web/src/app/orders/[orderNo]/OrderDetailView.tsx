@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { WhaleLoader } from "@/components/brand/WhaleLoader";
 import { ProductImage } from "@/components/ProductImage";
 import {
   claimApi,
@@ -62,7 +63,7 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
     }
   }
 
-  if (!order) return <p className="py-10 text-sm text-ink-faint">{error ?? "불러오는 중…"}</p>;
+  if (!order) return error ? <p className="py-10 text-sm text-sale">{error}</p> : <WhaleLoader label="주문을 불러오는 중이에요" />;
 
   const claimsByItem = new Map<number, Claim[]>();
   order.claims.forEach((c) => claimsByItem.set(c.orderItemId, [...(claimsByItem.get(c.orderItemId) ?? []), c]));

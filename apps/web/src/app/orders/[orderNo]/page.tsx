@@ -1,12 +1,13 @@
 import { Suspense } from "react";
 
+import { WhaleLoader } from "@/components/brand/WhaleLoader";
 import { OrderDetailView } from "./OrderDetailView";
 
 type Params = Promise<{ orderNo: string }>;
 
 export default function OrderDetailPage({ params }: { params: Params }) {
   return (
-    <Suspense fallback={<p className="py-10 text-sm text-ink-faint">불러오는 중…</p>}>
+    <Suspense fallback={<WhaleLoader label="주문을 불러오는 중이에요" />}>
       <Loader params={params} />
     </Suspense>
   );

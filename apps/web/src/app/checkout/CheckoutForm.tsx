@@ -4,6 +4,7 @@ import { loadTossPayments, type TossPaymentsWidgets } from "@tosspayments/tosspa
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { WhaleLoader } from "@/components/brand/WhaleLoader";
 import { AddressSearch } from "@/components/AddressSearch";
 import { TextField } from "@/components/AuthCard";
 import { ProductImage } from "@/components/ProductImage";
@@ -151,7 +152,7 @@ export function CheckoutForm() {
     return <p className="text-sm text-ink-faint">주문할 상품이 없습니다.</p>;
   }
   if (!preview || !me) {
-    return <p className="text-sm text-ink-faint">{message ?? "불러오는 중…"}</p>;
+    return message ? <p className="text-sm text-sale">{message}</p> : <WhaleLoader label="주문서를 준비하는 중이에요" />;
   }
 
   return (

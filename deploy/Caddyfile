@@ -1,0 +1,31 @@
+{
+	# 인증서 만료 알림을 받을 메일 (비워도 됨)
+	email {$ACME_EMAIL}
+}
+
+(common) {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
+
+# 쇼핑몰
+{$SHOP_DOMAIN} {
+	import common
+	header X-Frame-Options "SAMEORIGIN"
+	reverse_proxy web:3000
+}
+
+# 판매관리 (검색엔진 노출 차단, 다른 사이트 안에 넣기 금지)
+{$ADMIN_DOMAIN} {
+	import common
+	header {
+		X-Frame-Options "DENY"
+		X-Robots-Tag "noindex, nofollow"
+	}
+	reverse_proxy admin:3001
+}

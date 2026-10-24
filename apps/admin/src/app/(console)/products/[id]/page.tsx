@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { WhaleLoader } from "@/components/brand/WhaleLoader";
 import { ProductEditor } from "./ProductEditor";
 
 // 관리자 영역은 로그인 확인 뒤에 그리므로 즉시 이동 검증에서 뺀다 ((console)/layout.tsx 참고)
@@ -13,7 +14,7 @@ type Props = {
 
 export default function ProductDetailPage({ params, searchParams }: Props) {
   return (
-    <Suspense fallback={<p className="text-sm text-ink-faint">불러오는 중…</p>}>
+    <Suspense fallback={<WhaleLoader />}>
       <EditorLoader params={params} searchParams={searchParams} />
     </Suspense>
   );

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { WhaleLoader } from "@/components/brand/WhaleLoader";
 import { StatusChip } from "@/components/StatusChip";
 import { Thumb } from "@/components/Thumb";
 import {
@@ -145,8 +146,8 @@ export function ProductList() {
             )}
             {!data && !error && (
               <tr>
-                <td colSpan={7} className="px-3 py-12 text-center text-ink-faint">
-                  불러오는 중…
+                <td colSpan={7}>
+                  <WhaleLoader size="sm" label="상품을 불러오는 중이에요" />
                 </td>
               </tr>
             )}

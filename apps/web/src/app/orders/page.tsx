@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { WhaleLoader } from "@/components/brand/WhaleLoader";
 import { ProductImage } from "@/components/ProductImage";
 import { ClientApiError, ITEM_STATUS_LABEL, loginUrl, orderApi, type OrderSummary, type Page } from "@/lib/client-api";
 import { formatWon } from "@/lib/format";
@@ -26,7 +27,7 @@ export default function OrdersPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 py-6">
       <h1 className="text-xl font-bold">주문·배송 조회</h1>
-      {!data && <p className="text-sm text-ink-faint">{error ?? "불러오는 중…"}</p>}
+      {!data && (error ? <p className="text-sm text-sale">{error}</p> : <WhaleLoader label="주문 내역을 불러오는 중이에요" />)}
       {data?.items.length === 0 && (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <p className="font-medium">주문 내역이 없습니다.</p>

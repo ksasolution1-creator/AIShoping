@@ -1,5 +1,6 @@
 package com.aishop.api.common.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -71,9 +72,10 @@ public class SecurityConfig {
 
 	/** 로그인·로그아웃 때 토큰을 새로 발급하려고 저장소를 빈으로 꺼내 둔다 */
 	@Bean
-	CookieCsrfTokenRepository csrfTokenRepository() {
+	CookieCsrfTokenRepository csrfTokenRepository(
+			@Value("${aishop.session.cookie-secure:false}") boolean secure) {
 		CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
-		repository.setCookieCustomizer(cookie -> cookie.sameSite("Lax").path("/"));
+		repository.setCookieCustomizer(cookie -> cookie.sameSite("Lax").path("/").secure(secure));
 		return repository;
 	}
 
