@@ -73,6 +73,7 @@ public class Indexes {
     public static final Index IX_SOCIAL_ACCOUNTS_USER = Internal.createIndex(DSL.name("ix_social_accounts_user"), SocialAccounts.SOCIAL_ACCOUNTS, new OrderField[] { SocialAccounts.SOCIAL_ACCOUNTS.USER_ID }, false);
     public static final Index IX_USER_AGREEMENTS_USER = Internal.createIndex(DSL.name("ix_user_agreements_user"), UserAgreements.USER_AGREEMENTS, new OrderField[] { UserAgreements.USER_AGREEMENTS.USER_ID, UserAgreements.USER_AGREEMENTS.TYPE, UserAgreements.USER_AGREEMENTS.CREATED_AT.desc() }, false);
     public static final Index UX_ADDRESSES_DEFAULT = Internal.createIndex(DSL.name("ux_addresses_default"), Addresses.ADDRESSES, new OrderField[] { Addresses.ADDRESSES.USER_ID }, true);
+    public static final Index UX_CLAIMS_OPEN_PER_ITEM = Internal.createIndex(DSL.name("ux_claims_open_per_item"), Claims.CLAIMS, new OrderField[] { Claims.CLAIMS.ORDER_ITEM_ID }, true);
     public static final Index UX_ORDERS_EXTERNAL = Internal.createIndex(DSL.name("ux_orders_external"), Orders.ORDERS, new OrderField[] { Orders.ORDERS.CHANNEL, Orders.ORDERS.EXTERNAL_ORDER_ID }, true);
     public static final Index UX_SHIPMENTS_TRACKING = Internal.createIndex(DSL.name("ux_shipments_tracking"), Shipments.SHIPMENTS, new OrderField[] { Shipments.SHIPMENTS.CARRIER_ID, Shipments.SHIPMENTS.TRACKING_NO }, true);
 }

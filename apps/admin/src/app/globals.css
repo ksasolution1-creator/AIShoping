@@ -2,15 +2,15 @@
 
 /* 판매관리: 빠르게 훑고 처리하는 화면. 밀도 높은 표, 상태는 색 칩으로 구분 */
 @theme {
-  --color-ink: #1a1c1f;
+  --color-ink: #0f2350;
   --color-ink-soft: #4b5059;
   --color-ink-faint: #8a8f98;
-  --color-line: #e3e5e8;
+  --color-line: #dde4f0;
   --color-surface: #ffffff;
-  --color-canvas: #f4f5f7;
-  --color-surface-muted: #eef0f2;
-  --color-brand: #0e5c4a;
-  --color-brand-strong: #0a4637;
+  --color-canvas: #f4f7fc;
+  --color-surface-muted: #edf2fa;
+  --color-brand: #1e5bc6;
+  --color-brand-strong: #174daa;
   --color-ok: #12805c;
   --color-warn: #b26a00;
   --color-danger: #c62a24;

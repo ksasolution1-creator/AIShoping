@@ -248,17 +248,30 @@ public class Skus extends TableImpl<SkusRecord> {
         return _cartItems;
     }
 
-    private transient ClaimsPath _claims;
+    private transient ClaimsPath _claimsExchangeSkuIdFkey;
 
     /**
      * Get the implicit to-many join path to the <code>public.claims</code>
-     * table
+     * table, via the <code>claims_exchange_sku_id_fkey</code> key
      */
-    public ClaimsPath claims() {
-        if (_claims == null)
-            _claims = new ClaimsPath(this, null, Keys.CLAIMS__CLAIMS_EXCHANGE_SKU_ID_FKEY.getInverseKey());
+    public ClaimsPath claimsExchangeSkuIdFkey() {
+        if (_claimsExchangeSkuIdFkey == null)
+            _claimsExchangeSkuIdFkey = new ClaimsPath(this, null, Keys.CLAIMS__CLAIMS_EXCHANGE_SKU_ID_FKEY.getInverseKey());
 
-        return _claims;
+        return _claimsExchangeSkuIdFkey;
+    }
+
+    private transient ClaimsPath _claimsRestockSkuIdFkey;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.claims</code>
+     * table, via the <code>claims_restock_sku_id_fkey</code> key
+     */
+    public ClaimsPath claimsRestockSkuIdFkey() {
+        if (_claimsRestockSkuIdFkey == null)
+            _claimsRestockSkuIdFkey = new ClaimsPath(this, null, Keys.CLAIMS__CLAIMS_RESTOCK_SKU_ID_FKEY.getInverseKey());
+
+        return _claimsRestockSkuIdFkey;
     }
 
     private transient InventoriesPath _inventories;

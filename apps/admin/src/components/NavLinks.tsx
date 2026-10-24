@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const MENU = [
   { href: "/orders", label: "주문 관리", ready: true },
+  { href: "/claims", label: "취소·반품", ready: true },
   { href: "/products", label: "상품 관리", ready: true },
   { href: "/categories", label: "카테고리", ready: true },
   { href: "#inventory", label: "재고·매입", ready: false },

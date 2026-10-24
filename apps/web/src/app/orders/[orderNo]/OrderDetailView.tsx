@@ -2,11 +2,27 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { ProductImage } from "@/components/ProductImage";
-import { ClientApiError, ITEM_STATUS_LABEL, loginUrl, orderApi, type OrderDetail } from "@/lib/client-api";
+import {
+  claimApi,
+  CLAIM_STATUS_LABEL,
+  gradeLabel,
+  ClientApiError,
+  ITEM_STATUS_LABEL,
+  loginUrl,
+  orderApi,
+  RETURN_REASONS,
+  type Claim,
+  type OrderDetail,
+} from "@/lib/client-api";
 import { formatWon } from "@/lib/format";
+
+type Item = OrderDetail["items"][number];
+
+const RETURNABLE = new Set(["SHIPPED", "DELIVERED", "CONFIRMED"]);
+const OPEN_CLAIM = new Set(["REQUESTED", "APPROVED", "COLLECTING", "INSPECTING"]);
 
 export function OrderDetailView({ orderNo }: { orderNo: string }) {
   const router = useRouter();
@@ -15,24 +31,32 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    orderApi
-      .detail(orderNo)
-      .then(setOrder)
-      .catch((e) => {
-        if (e instanceof ClientApiError && e.status === 401) router.replace(loginUrl());
-        else setError(e instanceof ClientApiError ? e.message : "주문을 불러오지 못했습니다.");
-      });
-  }, [orderNo, router]);
+  const reload = useCallback(
+    () =>
+      orderApi
+        .detail(orderNo)
+        .then(setOrder)
+        .catch((e) => {
+          if (e instanceof ClientApiError && e.status === 401) router.replace(loginUrl());
+          else setError(e instanceof ClientApiError ? e.message : "주문을 불러오지 못했습니다.");
+        }),
+    [orderNo, router],
+  );
 
-  async function cancel() {
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  async function run(action: () => Promise<unknown>) {
     setBusy(true);
+    setError(null);
     try {
-      setOrder(await orderApi.cancel(orderNo, "고객 요청 취소"));
-      setConfirmingCancel(false);
-      setError(null);
+      await action();
+      await reload();
+      return true;
     } catch (e) {
-      setError(e instanceof ClientApiError ? e.message : "취소하지 못했습니다.");
+      setError(e instanceof ClientApiError ? e.message : "처리하지 못했습니다.");
+      return false;
     } finally {
       setBusy(false);
     }
@@ -40,32 +64,40 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
 
   if (!order) return <p className="py-10 text-sm text-ink-faint">{error ?? "불러오는 중…"}</p>;
 
+  const claimsByItem = new Map<number, Claim[]>();
+  order.claims.forEach((c) => claimsByItem.set(c.orderItemId, [...(claimsByItem.get(c.orderItemId) ?? []), c]));
+  const refundedTotal = order.claims.reduce((sum, c) => sum + (c.refundAmount ?? 0), 0);
+
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 py-6">
       <div className="flex flex-col gap-1">
         <Link href="/orders" className="text-sm text-ink-faint hover:text-ink-soft">
           ← 주문 내역
         </Link>
-        <h1 className="text-xl font-bold">주문 상세</h1>
+        <h1 className="font-display text-2xl text-navy">주문 상세</h1>
         <p className="text-sm text-ink-faint">
           {new Date(order.orderedAt).toLocaleString("ko-KR")} · <span className="font-mono">{order.orderNo}</span>
         </p>
       </div>
 
-      <section className="flex flex-col divide-y divide-line border-y border-line">
+      {error && (
+        <p role="alert" className="rounded-xl bg-sale/10 p-3 text-sm text-sale">
+          {error}
+        </p>
+      )}
+
+      <section className="flex flex-col divide-y divide-line rounded-2xl border border-line">
         {order.items.map((item) => (
-          <div key={item.id} className="flex gap-3 py-3">
-            <ProductImage src={item.thumbnailUrl} alt={item.productName} className="size-16 rounded-md" />
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-sm">
-              <span className="font-semibold text-brand">{ITEM_STATUS_LABEL[item.status] ?? item.status}</span>
-              <span className="line-clamp-1">{item.productName}</span>
-              <span className="text-xs text-ink-faint">
-                {item.optionText && `${item.optionText} · `}
-                {item.qty}개
-              </span>
-            </div>
-            <span className="text-sm font-bold tabular-nums">{formatWon(item.lineTotal)}</span>
-          </div>
+          <ItemRow
+            key={item.id}
+            item={item}
+            claims={claimsByItem.get(item.id) ?? []}
+            busy={busy}
+            onCancel={() => run(() => claimApi.cancelItem(order.orderNo, item.id))}
+            onReturn={(reason, detail) => run(() => claimApi.requestReturn(order.orderNo, item.id, reason, detail))}
+            onWithdraw={(claimId) => run(() => claimApi.withdraw(claimId))}
+            singleItem={order.items.length === 1}
+          />
         ))}
       </section>
 
@@ -73,7 +105,7 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
         <section className="flex flex-col gap-2">
           <h2 className="font-bold">배송 정보</h2>
           {order.shipments.map((s) => (
-            <p key={s.id} className="rounded-md bg-surface-muted p-3 text-sm">
+            <p key={s.id} className="rounded-xl bg-surface-muted p-3 text-sm">
               {s.carrierName} <span className="font-mono">{s.trackingNo}</span>
             </p>
           ))}
@@ -91,7 +123,7 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
         {order.receiver.deliveryMemo && <p className="text-ink-faint">요청사항: {order.receiver.deliveryMemo}</p>}
       </section>
 
-      <section className="flex flex-col gap-2 rounded-md bg-surface-muted p-4 text-sm">
+      <section className="flex flex-col gap-2 rounded-2xl bg-surface-muted p-4 text-sm">
         <div className="flex justify-between">
           <span className="text-ink-soft">상품 금액</span>
           <span className="tabular-nums">{formatWon(order.itemsTotal)}</span>
@@ -104,43 +136,206 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
           <span>결제 금액</span>
           <span className="tabular-nums">{formatWon(order.payAmount)}</span>
         </div>
+        {refundedTotal > 0 && (
+          <div className="flex justify-between font-bold text-sale">
+            <span>환불 금액</span>
+            <span className="tabular-nums">−{formatWon(refundedTotal)}</span>
+          </div>
+        )}
         {order.payment && (
-          <p className="text-xs text-ink-faint">
-            {order.payment.easyPayProvider ?? order.payment.method}
-            {order.payment.status === "CANCELED" && " · 전액 환불됨"}
-          </p>
+          <p className="text-xs text-ink-faint">{order.payment.easyPayProvider ?? order.payment.method}</p>
         )}
       </section>
 
-      {error && (
-        <p role="alert" className="rounded-md bg-sale/10 p-3 text-sm text-sale">
-          {error}
-        </p>
-      )}
-
       {order.cancellable &&
+        order.items.length > 1 &&
         (confirmingCancel ? (
-          <div className="flex flex-col gap-3 rounded-md border border-sale/30 p-4">
-            <p className="text-sm">주문을 취소하면 결제 금액 {formatWon(order.payAmount)}이 환불됩니다. 취소할까요?</p>
+          <div className="flex flex-col gap-3 rounded-2xl border border-sale/30 p-4">
+            <p className="text-sm">주문 전체를 취소하면 결제 금액 {formatWon(order.payAmount)}이 환불됩니다. 취소할까요?</p>
             <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setConfirmingCancel(false)} className="h-11 rounded-md border border-line text-sm">
+              <button type="button" onClick={() => setConfirmingCancel(false)} className="h-11 rounded-xl border border-line text-sm">
                 그대로 두기
               </button>
               <button
                 type="button"
-                onClick={cancel}
                 disabled={busy}
-                className="h-11 rounded-md bg-sale text-sm font-semibold text-white disabled:opacity-50"
+                onClick={async () => {
+                  if (await run(() => orderApi.cancel(orderNo, "고객 요청 취소"))) setConfirmingCancel(false);
+                }}
+                className="h-11 rounded-xl bg-sale text-sm font-semibold text-white disabled:opacity-50"
               >
-                {busy ? "취소 중…" : "주문 취소"}
+                {busy ? "취소 중…" : "전체 취소"}
               </button>
             </div>
           </div>
         ) : (
-          <button type="button" onClick={() => setConfirmingCancel(true)} className="h-11 rounded-md border border-line text-sm">
-            주문 취소
+          <button type="button" onClick={() => setConfirmingCancel(true)} className="h-11 rounded-xl border border-line text-sm">
+            주문 전체 취소
           </button>
         ))}
+    </div>
+  );
+}
+
+function ItemRow({
+  item,
+  claims,
+  busy,
+  singleItem,
+  onCancel,
+  onReturn,
+  onWithdraw,
+}: {
+  item: Item;
+  claims: Claim[];
+  busy: boolean;
+  singleItem: boolean;
+  onCancel: () => Promise<boolean>;
+  onReturn: (reason: string, detail: string) => Promise<boolean>;
+  onWithdraw: (claimId: number) => Promise<boolean>;
+}) {
+  const [mode, setMode] = useState<"none" | "cancel" | "return">("none");
+  const [reason, setReason] = useState<string>("");
+  const hasOpenClaim = claims.some((c) => OPEN_CLAIM.has(c.status));
+  const canCancel = item.status === "PAID" && !hasOpenClaim;
+  const canReturn = RETURNABLE.has(item.status) && !hasOpenClaim;
+  const reasonInfo = RETURN_REASONS.find((r) => r.code === reason);
+
+  return (
+    <div className="flex flex-col gap-3 p-4">
+      <div className="flex gap-3">
+        <ProductImage src={item.thumbnailUrl} alt={item.productName} className="size-16 rounded-xl" />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-sm">
+          <span className="font-semibold text-brand">{ITEM_STATUS_LABEL[item.status] ?? item.status}</span>
+          <span className="line-clamp-1">{item.productName}</span>
+          <span className="text-xs text-ink-faint">
+            {[gradeLabel(item.conditionGrade), item.optionText].filter(Boolean).join(" · ")} · {item.qty}개
+          </span>
+        </div>
+        <span className="text-sm font-bold tabular-nums">{formatWon(item.lineTotal)}</span>
+      </div>
+
+      {claims.map((claim) => (
+        <div key={claim.id} className="flex flex-col gap-1 rounded-xl bg-surface-muted p-3 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold">
+              {claim.type === "CANCEL" ? "취소" : "반품"} · {CLAIM_STATUS_LABEL[claim.status]}
+            </span>
+            {claim.status === "REQUESTED" && claim.type === "RETURN" && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => onWithdraw(claim.id)}
+                className="text-ink-soft underline underline-offset-2"
+              >
+                신청 철회
+              </button>
+            )}
+          </div>
+          {claim.type === "RETURN" && <span className="text-ink-soft">사유: {claim.reasonLabel}</span>}
+          {claim.returnShippingFee > 0 && (
+            <span className="text-ink-soft">반품 배송비 {formatWon(claim.returnShippingFee)} (환불 금액에서 차감)</span>
+          )}
+          {claim.refundAmount !== null && (
+            <span className="font-semibold text-sale">환불 {formatWon(claim.refundAmount)}</span>
+          )}
+          {claim.rejectReason && <span className="text-sale">거절 사유: {claim.rejectReason}</span>}
+        </div>
+      ))}
+
+      {mode === "none" && (canCancel || canReturn) && (
+        <div className="flex gap-2">
+          {canCancel && !singleItem && (
+            <button type="button" onClick={() => setMode("cancel")} className="h-9 rounded-lg border border-line px-3 text-sm">
+              이 상품 취소
+            </button>
+          )}
+          {canCancel && singleItem && (
+            <button type="button" onClick={() => setMode("cancel")} className="h-9 rounded-lg border border-line px-3 text-sm">
+              주문 취소
+            </button>
+          )}
+          {canReturn && (
+            <button type="button" onClick={() => setMode("return")} className="h-9 rounded-lg border border-line px-3 text-sm">
+              반품 신청
+            </button>
+          )}
+        </div>
+      )}
+
+      {mode === "cancel" && (
+        <div className="flex flex-col gap-2 rounded-xl border border-sale/30 p-3 text-sm">
+          <p>{singleItem ? "주문을 취소하면 결제 금액이 모두 환불됩니다." : `이 상품 ${formatWon(item.lineTotal)}을 취소하고 환불합니다.`}</p>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setMode("none")} className="h-9 flex-1 rounded-lg border border-line">
+              그대로 두기
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                if (await onCancel()) setMode("none");
+              }}
+              className="h-9 flex-1 rounded-lg bg-sale font-semibold text-white disabled:opacity-50"
+            >
+              취소하기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {mode === "return" && (
+        <form
+          className="flex flex-col gap-2 rounded-xl border border-line p-3 text-sm"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const detail = String(new FormData(e.currentTarget).get("detail") ?? "");
+            if (await onReturn(reason, detail)) setMode("none");
+          }}
+        >
+          <label className="flex flex-col gap-1">
+            <span className="font-medium">반품 사유</span>
+            <select
+              id={`reason-${item.id}`}
+              required
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="h-10 rounded-lg border border-line px-2"
+            >
+              <option value="" disabled>
+                선택해 주세요
+              </option>
+              {RETURN_REASONS.map((r) => (
+                <option key={r.code} value={r.code}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {reasonInfo && (
+            <p className={`text-xs ${reasonInfo.customerPays ? "text-sale" : "text-brand"}`}>
+              {reasonInfo.customerPays
+                ? "단순 변심은 반품 배송비(무료배송 주문이면 왕복)가 환불 금액에서 빠집니다."
+                : "판매자 사유라 반품 배송비가 없습니다. 검수 후 전액 환불됩니다."}
+            </p>
+          )}
+          <textarea
+            id={`detail-${item.id}`}
+            name="detail"
+            rows={2}
+            placeholder="상세 내용 (선택)"
+            className="rounded-lg border border-line p-2"
+          />
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setMode("none")} className="h-9 flex-1 rounded-lg border border-line">
+              닫기
+            </button>
+            <button type="submit" disabled={busy || !reason} className="h-9 flex-1 rounded-lg bg-brand font-semibold text-white disabled:opacity-50">
+              반품 신청
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

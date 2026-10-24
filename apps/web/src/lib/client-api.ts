@@ -197,6 +197,57 @@ export type OrderDetail = {
   } | null;
   shipments: { id: number; carrierName: string; trackingNo: string; status: string; shippedAt: string | null }[];
   cancellable: boolean;
+  claims: Claim[];
+};
+
+export type Claim = {
+  id: number;
+  type: "CANCEL" | "RETURN" | "EXCHANGE";
+  status: "REQUESTED" | "APPROVED" | "COLLECTING" | "INSPECTING" | "COMPLETED" | "REJECTED" | "WITHDRAWN";
+  orderNo: string;
+  orderItemId: number;
+  productName: string;
+  qty: number;
+  lineTotal: number;
+  reasonCode: string;
+  reasonLabel: string;
+  reasonDetail: string | null;
+  fault: "CUSTOMER" | "SELLER" | null;
+  returnShippingFee: number;
+  refundAmount: number | null;
+  inspectionGrade: string | null;
+  rejectReason: string | null;
+  requestedAt: string;
+  completedAt: string | null;
+};
+
+export const RETURN_REASONS = [
+  { code: "CHANGE_OF_MIND", label: "단순 변심", customerPays: true },
+  { code: "DEFECTIVE", label: "상품 불량·파손", customerPays: false },
+  { code: "NOT_AS_DESCRIBED", label: "상품 설명·상태등급과 다름", customerPays: false },
+  { code: "WRONG_ITEM", label: "다른 상품이 옴", customerPays: false },
+  { code: "MISSING_PARTS", label: "구성품 누락", customerPays: false },
+] as const;
+
+export const CLAIM_STATUS_LABEL: Record<Claim["status"], string> = {
+  REQUESTED: "신청 접수",
+  APPROVED: "승인",
+  COLLECTING: "회수 중",
+  INSPECTING: "검수 중",
+  COMPLETED: "완료",
+  REJECTED: "거절",
+  WITHDRAWN: "철회",
+};
+
+export const claimApi = {
+  cancelItem: (orderNo: string, itemId: number) =>
+    apiRequest<Claim>(`/api/orders/${orderNo}/items/${itemId}/cancel`, { method: "POST", body: "{}" }),
+  requestReturn: (orderNo: string, itemId: number, reason: string, detail: string) =>
+    apiRequest<Claim>(`/api/orders/${orderNo}/items/${itemId}/return`, {
+      method: "POST",
+      body: JSON.stringify({ reason, detail }),
+    }),
+  withdraw: (claimId: number) => apiRequest<Claim>(`/api/claims/${claimId}/withdraw`, { method: "POST" }),
 };
 
 export type Page<T> = { items: T[]; page: number; size: number; total: number; totalPages: number };
@@ -262,4 +313,21 @@ export function loginUrl() {
 /** 로그인 후 돌아갈 주소. 다른 사이트로 보내는 주소는 무시한다 */
 export function safeNext(next: string | null) {
   return next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+}
+
+const GRADE_LABEL: Record<string, string> = {
+  NEW: "새상품",
+  RETURN_UNOPENED: "반품 미개봉",
+  RETURN_OPENED: "반품 개봉",
+  REFURB: "리퍼",
+  USED_A: "중고 A급",
+  USED_B: "중고 B급",
+  USED_C: "중고 C급",
+  DISPLAY: "전시상품",
+};
+
+/** 상태등급 코드 → 이름 (예: USED_B → 중고 B급) */
+export function gradeLabel(code: string | null | undefined) {
+  if (!code) return null;
+  return GRADE_LABEL[code] ?? code;
 }

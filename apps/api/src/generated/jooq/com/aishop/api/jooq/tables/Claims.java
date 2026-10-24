@@ -7,7 +7,9 @@ package com.aishop.api.jooq.tables;
 import com.aishop.api.jooq.Indexes;
 import com.aishop.api.jooq.Keys;
 import com.aishop.api.jooq.Public;
+import com.aishop.api.jooq.tables.Carriers.CarriersPath;
 import com.aishop.api.jooq.tables.ClaimImages.ClaimImagesPath;
+import com.aishop.api.jooq.tables.Locations.LocationsPath;
 import com.aishop.api.jooq.tables.OrderItems.OrderItemsPath;
 import com.aishop.api.jooq.tables.Refunds.RefundsPath;
 import com.aishop.api.jooq.tables.Shipments.ShipmentsPath;
@@ -152,6 +154,41 @@ public class Claims extends TableImpl<ClaimsRecord> {
      */
     public final TableField<ClaimsRecord, OffsetDateTime> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6).nullable(false).defaultValue(DSL.field(DSL.raw("now()"), SQLDataType.TIMESTAMPWITHTIMEZONE)), this, "");
 
+    /**
+     * The column <code>public.claims.prev_item_status</code>.
+     */
+    public final TableField<ClaimsRecord, String> PREV_ITEM_STATUS = createField(DSL.name("prev_item_status"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.claims.refund_amount</code>.
+     */
+    public final TableField<ClaimsRecord, Long> REFUND_AMOUNT = createField(DSL.name("refund_amount"), SQLDataType.BIGINT, this, "");
+
+    /**
+     * The column <code>public.claims.reject_reason</code>.
+     */
+    public final TableField<ClaimsRecord, String> REJECT_REASON = createField(DSL.name("reject_reason"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.claims.restock_sku_id</code>.
+     */
+    public final TableField<ClaimsRecord, Long> RESTOCK_SKU_ID = createField(DSL.name("restock_sku_id"), SQLDataType.BIGINT, this, "");
+
+    /**
+     * The column <code>public.claims.restock_location_id</code>.
+     */
+    public final TableField<ClaimsRecord, Long> RESTOCK_LOCATION_ID = createField(DSL.name("restock_location_id"), SQLDataType.BIGINT, this, "");
+
+    /**
+     * The column <code>public.claims.pickup_carrier_id</code>.
+     */
+    public final TableField<ClaimsRecord, Long> PICKUP_CARRIER_ID = createField(DSL.name("pickup_carrier_id"), SQLDataType.BIGINT, this, "");
+
+    /**
+     * The column <code>public.claims.pickup_tracking_no</code>.
+     */
+    public final TableField<ClaimsRecord, String> PICKUP_TRACKING_NO = createField(DSL.name("pickup_tracking_no"), SQLDataType.CLOB, this, "");
+
     private Claims(Name alias, Table<ClaimsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -221,7 +258,7 @@ public class Claims extends TableImpl<ClaimsRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IX_CLAIMS_OPEN, Indexes.IX_CLAIMS_ORDER_ITEM);
+        return Arrays.asList(Indexes.IX_CLAIMS_OPEN, Indexes.IX_CLAIMS_ORDER_ITEM, Indexes.UX_CLAIMS_OPEN_PER_ITEM);
     }
 
     @Override
@@ -236,19 +273,20 @@ public class Claims extends TableImpl<ClaimsRecord> {
 
     @Override
     public List<ForeignKey<ClaimsRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.CLAIMS__CLAIMS_EXCHANGE_SKU_ID_FKEY, Keys.CLAIMS__CLAIMS_ORDER_ITEM_ID_FKEY, Keys.CLAIMS__CLAIMS_PROCESSED_BY_FKEY, Keys.CLAIMS__CLAIMS_REQUESTED_BY_FKEY);
+        return Arrays.asList(Keys.CLAIMS__CLAIMS_EXCHANGE_SKU_ID_FKEY, Keys.CLAIMS__CLAIMS_ORDER_ITEM_ID_FKEY, Keys.CLAIMS__CLAIMS_PICKUP_CARRIER_ID_FKEY, Keys.CLAIMS__CLAIMS_PROCESSED_BY_FKEY, Keys.CLAIMS__CLAIMS_REQUESTED_BY_FKEY, Keys.CLAIMS__CLAIMS_RESTOCK_LOCATION_ID_FKEY, Keys.CLAIMS__CLAIMS_RESTOCK_SKU_ID_FKEY);
     }
 
-    private transient SkusPath _skus;
+    private transient SkusPath _claimsExchangeSkuIdFkey;
 
     /**
-     * Get the implicit join path to the <code>public.skus</code> table.
+     * Get the implicit join path to the <code>public.skus</code> table, via the
+     * <code>claims_exchange_sku_id_fkey</code> key.
      */
-    public SkusPath skus() {
-        if (_skus == null)
-            _skus = new SkusPath(this, Keys.CLAIMS__CLAIMS_EXCHANGE_SKU_ID_FKEY, null);
+    public SkusPath claimsExchangeSkuIdFkey() {
+        if (_claimsExchangeSkuIdFkey == null)
+            _claimsExchangeSkuIdFkey = new SkusPath(this, Keys.CLAIMS__CLAIMS_EXCHANGE_SKU_ID_FKEY, null);
 
-        return _skus;
+        return _claimsExchangeSkuIdFkey;
     }
 
     private transient OrderItemsPath _orderItems;
@@ -261,6 +299,18 @@ public class Claims extends TableImpl<ClaimsRecord> {
             _orderItems = new OrderItemsPath(this, Keys.CLAIMS__CLAIMS_ORDER_ITEM_ID_FKEY, null);
 
         return _orderItems;
+    }
+
+    private transient CarriersPath _carriers;
+
+    /**
+     * Get the implicit join path to the <code>public.carriers</code> table.
+     */
+    public CarriersPath carriers() {
+        if (_carriers == null)
+            _carriers = new CarriersPath(this, Keys.CLAIMS__CLAIMS_PICKUP_CARRIER_ID_FKEY, null);
+
+        return _carriers;
     }
 
     private transient UsersPath _claimsProcessedByFkey;
@@ -287,6 +337,31 @@ public class Claims extends TableImpl<ClaimsRecord> {
             _claimsRequestedByFkey = new UsersPath(this, Keys.CLAIMS__CLAIMS_REQUESTED_BY_FKEY, null);
 
         return _claimsRequestedByFkey;
+    }
+
+    private transient LocationsPath _locations;
+
+    /**
+     * Get the implicit join path to the <code>public.locations</code> table.
+     */
+    public LocationsPath locations() {
+        if (_locations == null)
+            _locations = new LocationsPath(this, Keys.CLAIMS__CLAIMS_RESTOCK_LOCATION_ID_FKEY, null);
+
+        return _locations;
+    }
+
+    private transient SkusPath _claimsRestockSkuIdFkey;
+
+    /**
+     * Get the implicit join path to the <code>public.skus</code> table, via the
+     * <code>claims_restock_sku_id_fkey</code> key.
+     */
+    public SkusPath claimsRestockSkuIdFkey() {
+        if (_claimsRestockSkuIdFkey == null)
+            _claimsRestockSkuIdFkey = new SkusPath(this, Keys.CLAIMS__CLAIMS_RESTOCK_SKU_ID_FKEY, null);
+
+        return _claimsRestockSkuIdFkey;
     }
 
     private transient ClaimImagesPath _claimImages;
@@ -331,8 +406,10 @@ public class Claims extends TableImpl<ClaimsRecord> {
     @Override
     public List<Check<ClaimsRecord>> getChecks() {
         return Arrays.asList(
+            Internal.createCheck(this, DSL.name("ck_claims_inspection_grade"), "(((inspection_grade IS NULL) OR (inspection_grade = ANY (ARRAY['NEW'::text, 'RETURN_UNOPENED'::text, 'RETURN_OPENED'::text, 'REFURB'::text, 'USED_A'::text, 'USED_B'::text, 'USED_C'::text, 'DISPLAY'::text, 'DISPOSE'::text]))))", true),
             Internal.createCheck(this, DSL.name("claims_fault_check"), "((fault = ANY (ARRAY['CUSTOMER'::text, 'SELLER'::text])))", true),
             Internal.createCheck(this, DSL.name("claims_qty_check"), "((qty > 0))", true),
+            Internal.createCheck(this, DSL.name("claims_refund_amount_check"), "((refund_amount >= 0))", true),
             Internal.createCheck(this, DSL.name("claims_return_shipping_fee_check"), "((return_shipping_fee >= 0))", true),
             Internal.createCheck(this, DSL.name("claims_status_check"), "((status = ANY (ARRAY['REQUESTED'::text, 'APPROVED'::text, 'COLLECTING'::text, 'INSPECTING'::text, 'COMPLETED'::text, 'REJECTED'::text, 'WITHDRAWN'::text])))", true),
             Internal.createCheck(this, DSL.name("claims_type_check"), "((type = ANY (ARRAY['CANCEL'::text, 'RETURN'::text, 'EXCHANGE'::text])))", true)

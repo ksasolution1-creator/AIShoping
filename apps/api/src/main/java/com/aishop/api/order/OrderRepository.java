@@ -85,6 +85,21 @@ public class OrderRepository {
 		return dsl.selectFrom(ORDERS).where(ORDERS.ORDER_NO.eq(orderNo)).forUpdate().fetchOptional();
 	}
 
+	public Optional<OrderItemsRecord> findItem(long itemId) {
+		return dsl.selectFrom(ORDER_ITEMS).where(ORDER_ITEMS.ID.eq(itemId)).fetchOptional();
+	}
+
+	public Optional<String> findOrderNoOfItem(long itemId) {
+		return dsl.select(ORDERS.ORDER_NO)
+			.from(ORDER_ITEMS).join(ORDERS).on(ORDERS.ID.eq(ORDER_ITEMS.ORDER_ID))
+			.where(ORDER_ITEMS.ID.eq(itemId))
+			.fetchOptional(ORDERS.ORDER_NO);
+	}
+
+	public void setItemStatus(long itemId, String status) {
+		dsl.update(ORDER_ITEMS).set(ORDER_ITEMS.STATUS, status).where(ORDER_ITEMS.ID.eq(itemId)).execute();
+	}
+
 	public List<OrderItemsRecord> findItems(long orderId) {
 		return dsl.selectFrom(ORDER_ITEMS).where(ORDER_ITEMS.ORDER_ID.eq(orderId)).orderBy(ORDER_ITEMS.ID).fetch();
 	}

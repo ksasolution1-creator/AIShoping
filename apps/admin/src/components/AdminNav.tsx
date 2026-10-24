@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { WhaleMark } from "./brand/WhaleMark";
 import { ActiveNavLinks, NavLinks } from "./NavLinks";
 import { UserBox } from "./UserBox";
 
@@ -8,8 +9,12 @@ export function AdminNav() {
   return (
     <aside className="flex flex-col border-b border-line bg-surface md:min-h-screen md:w-52 md:shrink-0 md:border-r md:border-b-0">
       <div className="px-4 py-4 md:px-5">
-        <Link href="/orders" className="font-bold text-brand">
-          AIShop <span className="text-sm font-medium text-ink-faint">판매관리</span>
+        <Link href="/orders" className="flex items-center gap-2">
+          <WhaleMark className="size-9" />
+          <span className="flex flex-col leading-tight">
+            <span className="font-bold text-ink">떨고래 마켓</span>
+            <span className="text-xs text-ink-faint">판매관리</span>
+          </span>
         </Link>
       </div>
       <nav className="overflow-x-auto px-2 pb-2 md:flex-1 md:pb-0">

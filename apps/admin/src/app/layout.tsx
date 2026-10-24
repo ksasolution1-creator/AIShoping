@@ -11,7 +11,7 @@ const plexKr = IBM_Plex_Sans_KR({
 });
 
 export const metadata: Metadata = {
-  title: { default: "AIShop 판매관리", template: "%s | AIShop 판매관리" },
+  title: { default: "떨고래 마켓 판매관리", template: "%s | 떨고래 마켓 판매관리" },
   description: "주문·재고·배송 관리",
   robots: { index: false, follow: false },
 };

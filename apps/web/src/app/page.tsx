@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { HeroBanner } from "@/components/brand/HeroBanner";
 import { ProductCardItem } from "@/components/ProductCardItem";
 import {
   fetchCategories,
@@ -50,9 +51,11 @@ function buildHref(filters: Filters, change: Partial<Filters>) {
 
 export default function HomePage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <div className="flex flex-col gap-6 pt-6">
+    <div className="flex flex-col gap-6 pt-5">
+      <HeroBanner />
+
       <section className="flex flex-col gap-1">
-        <h1 className="text-xl font-bold sm:text-2xl">검수 완료 반품·리퍼 상품</h1>
+        <h2 className="font-display text-2xl text-navy">오늘의 땡처리</h2>
         <p className="text-sm text-ink-soft">
           모든 상품에 상태등급과 실물 사진을 표시합니다. 같은 상품도 상태에 따라 가격이 다릅니다.
         </p>
@@ -92,8 +95,8 @@ async function CategoryTabs({ searchParams }: { searchParams: SearchParams }) {
                 aria-current={active ? "page" : undefined}
                 className={`block rounded-full border px-3.5 py-1.5 text-sm whitespace-nowrap ${
                   active
-                    ? "border-ink bg-ink text-white"
-                    : "border-line text-ink-soft hover:border-ink-faint"
+                    ? "border-brand bg-brand font-semibold text-white shadow-sm"
+                    : "border-line bg-surface text-ink-soft hover:border-brand hover:text-brand"
                 }`}
               >
                 {tab.name}
@@ -163,7 +166,7 @@ async function ProductResults({ searchParams }: { searchParams: SearchParams }) 
               href={buildHref(filters, { page, sort: filters.sort, categoryId: filters.categoryId })}
               aria-current={page === filters.page ? "page" : undefined}
               className={`flex size-9 items-center justify-center rounded-md text-sm tabular-nums ${
-                page === filters.page ? "bg-ink text-white" : "text-ink-soft hover:bg-surface-muted"
+                page === filters.page ? "bg-brand text-white" : "text-ink-soft hover:bg-surface-muted"
               }`}
             >
               {page + 1}

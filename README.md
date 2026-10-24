@@ -1,6 +1,6 @@
-# AIShop
+# 떨고래 마켓 (AIShop)
 
-재고·반품 상품 종합 쇼핑몰. 설계는 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 참고.
+재고·반품·땡처리 상품 종합 쇼핑몰 "떨고래 마켓 - 재고 · 땡처리 도매방". 설계는 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 참고.
 
 ## 구성
 

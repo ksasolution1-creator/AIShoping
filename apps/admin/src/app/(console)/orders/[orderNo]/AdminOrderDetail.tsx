@@ -6,8 +6,10 @@ import { useEffect, useState } from "react";
 import { Thumb } from "@/components/Thumb";
 import {
   ApiError,
+  claimAdminApi,
   formatDate,
   formatWon,
+  gradeLabel,
   ITEM_STATUS_LABEL,
   orderAdminApi,
   type Carrier,
@@ -133,6 +135,7 @@ export function AdminOrderDetail({ orderNo }: { orderNo: string }) {
               <th className="px-3 py-2 font-medium">상태</th>
               <th className="px-3 py-2 text-right font-medium">수량</th>
               <th className="px-3 py-2 text-right font-medium">금액</th>
+              <th className="px-3 py-2 font-medium" />
             </tr>
           </thead>
           <tbody>
@@ -144,7 +147,7 @@ export function AdminOrderDetail({ orderNo }: { orderNo: string }) {
                     <span className="flex flex-col">
                       <span>{item.productName}</span>
                       <span className="text-xs text-ink-faint">
-                        {[item.conditionGrade, item.optionText].filter(Boolean).join(" · ")}
+                        {[gradeLabel(item.conditionGrade), item.optionText].filter(Boolean).join(" · ")}
                       </span>
                     </span>
                   </div>
@@ -152,6 +155,23 @@ export function AdminOrderDetail({ orderNo }: { orderNo: string }) {
                 <td className="px-3 py-2">{ITEM_STATUS_LABEL[item.status] ?? item.status}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{item.qty}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{formatWon(item.lineTotal)}</td>
+                <td className="px-3 py-2 text-right">
+                  {(item.status === "PAID" || item.status === "PREPARING") && order.items.length > 1 && (
+                    <button
+                      type="button"
+                      className="text-xs text-danger underline underline-offset-2 disabled:opacity-50"
+                      disabled={busy}
+                      onClick={() =>
+                        run(async () => {
+                          await claimAdminApi.cancelItem(orderNo, item.id, "판매자 취소 (재고 부족 등)");
+                          return orderAdminApi.detail(orderNo);
+                        }, `'${item.productName}'을(를) 취소하고 부분 환불했습니다.`)
+                      }
+                    >
+                      이 상품 취소
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

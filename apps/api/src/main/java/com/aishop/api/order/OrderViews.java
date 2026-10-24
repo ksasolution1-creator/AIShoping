@@ -12,6 +12,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+import com.aishop.api.claim.ClaimViews.ClaimView;
+
 public final class OrderViews {
 
 	private OrderViews() {
@@ -80,7 +82,7 @@ public final class OrderViews {
 	public record OrderDetail(String orderNo, String channel, OffsetDateTime orderedAt, OffsetDateTime paidAt,
 			String status, String ordererName, String ordererEmail, Receiver receiver, List<OrderLineView> items,
 			long itemsTotal, long shippingFee, long discountTotal, long payAmount, PaymentView payment,
-			List<ShipmentView> shipments, boolean cancellable) {
+			List<ShipmentView> shipments, boolean cancellable, List<ClaimView> claims) {
 	}
 
 }

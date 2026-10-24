@@ -285,6 +285,69 @@ export const orderAdminApi = {
   carriers: () => request<Carrier[]>("/api/admin/carriers"),
 };
 
+export type Claim = {
+  id: number;
+  type: "CANCEL" | "RETURN" | "EXCHANGE";
+  status: "REQUESTED" | "APPROVED" | "COLLECTING" | "INSPECTING" | "COMPLETED" | "REJECTED" | "WITHDRAWN";
+  orderNo: string;
+  orderItemId: number;
+  ordererName: string;
+  productName: string;
+  optionText: string | null;
+  conditionGrade: string | null;
+  qty: number;
+  lineTotal: number;
+  reasonCode: string;
+  reasonLabel: string;
+  reasonDetail: string | null;
+  fault: "CUSTOMER" | "SELLER" | null;
+  returnShippingFee: number;
+  refundAmount: number | null;
+  inspectionGrade: string | null;
+  rejectReason: string | null;
+  pickupCarrierName: string | null;
+  pickupTrackingNo: string | null;
+  requestedAt: string;
+  completedAt: string | null;
+};
+
+export const CLAIM_STATUS_LABEL: Record<Claim["status"], string> = {
+  REQUESTED: "신청 접수",
+  APPROVED: "승인",
+  COLLECTING: "회수 중",
+  INSPECTING: "검수 중",
+  COMPLETED: "완료",
+  REJECTED: "거절",
+  WITHDRAWN: "고객 철회",
+};
+
+export const claimAdminApi = {
+  list: (params: { status?: string; type?: string; page?: number }) => {
+    const search = new URLSearchParams();
+    if (params.status) search.set("status", params.status);
+    if (params.type) search.set("type", params.type);
+    if (params.page) search.set("page", String(params.page));
+    return request<Page<Claim>>(`/api/admin/claims?${search}`);
+  },
+  approve: (id: number, pickupCarrierId: number | null, pickupTrackingNo: string) =>
+    request<Claim>(`/api/admin/claims/${id}/approve`, {
+      method: "POST",
+      body: JSON.stringify({ pickupCarrierId, pickupTrackingNo }),
+    }),
+  reject: (id: number, reason: string) =>
+    request<Claim>(`/api/admin/claims/${id}/reject`, { method: "POST", body: JSON.stringify({ reason }) }),
+  complete: (id: number, inspectionGrade: string, note: string) =>
+    request<Claim>(`/api/admin/claims/${id}/complete`, {
+      method: "POST",
+      body: JSON.stringify({ inspectionGrade, note }),
+    }),
+  cancelItem: (orderNo: string, itemId: number, reason: string) =>
+    request<Claim>(`/api/admin/orders/${orderNo}/items/${itemId}/cancel`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
+};
+
 export const api = {
   categories: () => request<Category[]>("/api/categories"),
   createCategory: (body: { name: string; parentId: number | null }) =>
@@ -351,4 +414,10 @@ export function optionsToText(options: Record<string, string>) {
   return Object.entries(options)
     .map(([key, value]) => `${key}=${value}`)
     .join(", ");
+}
+
+/** 상태등급 코드 → 이름 (예: USED_B → 중고 B급) */
+export function gradeLabel(code: string | null | undefined) {
+  if (!code) return null;
+  return GRADES.find((g) => g.code === code)?.label ?? code;
 }

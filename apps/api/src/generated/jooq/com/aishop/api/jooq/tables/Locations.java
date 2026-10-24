@@ -6,6 +6,7 @@ package com.aishop.api.jooq.tables;
 
 import com.aishop.api.jooq.Keys;
 import com.aishop.api.jooq.Public;
+import com.aishop.api.jooq.tables.Claims.ClaimsPath;
 import com.aishop.api.jooq.tables.Inventories.InventoriesPath;
 import com.aishop.api.jooq.tables.InventoryMovements.InventoryMovementsPath;
 import com.aishop.api.jooq.tables.OrderItems.OrderItemsPath;
@@ -187,6 +188,19 @@ public class Locations extends TableImpl<LocationsRecord> {
             _sellers = new SellersPath(this, Keys.LOCATIONS__LOCATIONS_SELLER_ID_FKEY, null);
 
         return _sellers;
+    }
+
+    private transient ClaimsPath _claims;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.claims</code>
+     * table
+     */
+    public ClaimsPath claims() {
+        if (_claims == null)
+            _claims = new ClaimsPath(this, null, Keys.CLAIMS__CLAIMS_RESTOCK_LOCATION_ID_FKEY.getInverseKey());
+
+        return _claims;
     }
 
     private transient InventoriesPath _inventories;

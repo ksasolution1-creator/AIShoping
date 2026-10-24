@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.aishop.api.auth.AuthUser;
+import com.aishop.api.claim.ClaimService;
+import com.aishop.api.claim.ClaimViews.ClaimView;
 import com.aishop.api.common.crypto.FieldCipher;
 import com.aishop.api.common.web.ApiException;
 import com.aishop.api.common.web.PageResponse;
@@ -48,15 +50,17 @@ public class OrderService {
 	private final InventoryRepository inventory;
 	private final FieldCipher cipher;
 	private final TossPaymentsClient toss;
+	private final ClaimService claimService;
 	private final SecureRandom random = new SecureRandom();
 
 	public OrderService(OrderRepository orders, PurchaseLineRepository purchaseLines, InventoryRepository inventory,
-			FieldCipher cipher, TossPaymentsClient toss) {
+			FieldCipher cipher, TossPaymentsClient toss, ClaimService claimService) {
 		this.orders = orders;
 		this.purchaseLines = purchaseLines;
 		this.inventory = inventory;
 		this.cipher = cipher;
 		this.toss = toss;
+		this.claimService = claimService;
 	}
 
 	// ------------------------------------------------------------------
@@ -333,7 +337,13 @@ public class OrderService {
 		return new OrderDetail(order.getOrderNo(), order.getChannel(), order.getOrderedAt(), order.getPaidAt(),
 				order.getStatus(), order.getOrdererName(), order.getOrdererEmail(), receiver, lines,
 				order.getItemsTotal(), order.getShippingFee(), order.getDiscountTotal(), order.getPayAmount(), payment,
-				shipments, cancellable);
+				shipments, cancellable, claimsOf(order, items));
+	}
+
+	/** 화면에 보이는 주문상품(판매자 화면이면 그 판매자 상품)의 취소·반품 내역 */
+	private List<ClaimView> claimsOf(OrdersRecord order, List<OrderItemsRecord> visibleItems) {
+		Set<Long> itemIds = new java.util.HashSet<>(visibleItems.stream().map(OrderItemsRecord::getId).toList());
+		return claimService.orderClaims(order.getId()).stream().filter(c -> itemIds.contains(c.orderItemId())).toList();
 	}
 
 	private static String normalizePhone(String phone) {

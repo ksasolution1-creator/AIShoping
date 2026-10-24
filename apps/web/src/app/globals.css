@@ -1,29 +1,51 @@
 @import "tailwindcss";
 
 /*
-  AIShop 쇼핑몰 토큰
-  - 아울렛 매장의 가격표 느낌: 흰 바탕, 진한 먹색 글자, 할인율은 빨강
+  떨고래 마켓 디자인 토큰
+  - 바다(고래 파랑·남색) 위에 노란 가격표와 빨간 할인표가 떠다니는 땡처리 창고 느낌
+  - 제목·로고는 둥글고 굵은 Jua, 본문은 IBM Plex Sans KR
   - 상태등급(새상품·반품·리퍼·중고·전시)은 고정 색으로 구분
 */
 @theme {
-  --color-ink: #17191c;
-  --color-ink-soft: #4a4f57;
-  --color-ink-faint: #868b94;
-  --color-line: #e6e7ea;
+  --color-ink: #0a2e6e;
+  --color-ink-soft: #3d5480;
+  --color-ink-faint: #7d8cab;
+  --color-line: #dde6f3;
   --color-surface: #ffffff;
-  --color-surface-muted: #f3f4f5;
-  --color-brand: #0e5c4a;
-  --color-brand-strong: #0a4637;
-  --color-sale: #e0312b;
+  --color-surface-muted: #f1f6fd;
+  --color-canvas: #f6f9fe;
 
-  --color-grade-new: #12805c;
-  --color-grade-return: #2459c7;
-  --color-grade-opened: #0f7fa3;
-  --color-grade-refurb: #7a3fc4;
+  --color-brand: #1e5bc6;
+  --color-brand-strong: #174daa;
+  --color-sea: #2e8bf0;
+  --color-foam: #ddf0ff;
+  --color-navy: #0a2e6e;
+  --color-tag: #ffd43b;
+  --color-sale: #ff4d4f;
+  --color-kraft: #c8a27a;
+  --color-kraft-soft: #f4e9dc;
+
+  --color-grade-new: #0f8a5f;
+  --color-grade-return: #1e5bc6;
+  --color-grade-opened: #0b84a5;
+  --color-grade-refurb: #7b3fc4;
   --color-grade-used: #b26a00;
-  --color-grade-display: #5b6270;
+  --color-grade-display: #5b6578;
 
   --font-sans: var(--font-plex-kr), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-display: var(--font-jua), var(--font-plex-kr), "Apple SD Gothic Neo", sans-serif;
+
+  --animate-bob: bob 4s ease-in-out infinite;
+
+  @keyframes bob {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-8px) rotate(-2deg);
+    }
+  }
 }
 
 html {
@@ -35,4 +57,15 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   word-break: keep-all;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-sea);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-bob {
+    animation: none;
+  }
 }

@@ -6,6 +6,7 @@ package com.aishop.api.jooq.tables;
 
 import com.aishop.api.jooq.Keys;
 import com.aishop.api.jooq.Public;
+import com.aishop.api.jooq.tables.Claims.ClaimsPath;
 import com.aishop.api.jooq.tables.Shipments.ShipmentsPath;
 import com.aishop.api.jooq.tables.records.CarriersRecord;
 
@@ -185,6 +186,19 @@ public class Carriers extends TableImpl<CarriersRecord> {
     @Override
     public List<UniqueKey<CarriersRecord>> getUniqueKeys() {
         return Arrays.asList(Keys.CARRIERS_CODE_KEY);
+    }
+
+    private transient ClaimsPath _claims;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.claims</code>
+     * table
+     */
+    public ClaimsPath claims() {
+        if (_claims == null)
+            _claims = new ClaimsPath(this, null, Keys.CLAIMS__CLAIMS_PICKUP_CARRIER_ID_FKEY.getInverseKey());
+
+        return _claims;
     }
 
     private transient ShipmentsPath _shipments;

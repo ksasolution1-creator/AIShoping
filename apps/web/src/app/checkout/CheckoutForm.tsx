@@ -2,8 +2,9 @@
 
 import { loadTossPayments, type TossPaymentsWidgets } from "@tosspayments/tosspayments-sdk";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { AddressSearch } from "@/components/AddressSearch";
 import { TextField } from "@/components/AuthCard";
 import { ProductImage } from "@/components/ProductImage";
 import {
@@ -47,6 +48,15 @@ export function CheckoutForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const widgetsRef = useRef<TossPaymentsWidgets | null>(null);
+  const [zipcode, setZipcode] = useState("");
+  const [address1, setAddress1] = useState("");
+
+  const selectAddress = useCallback((zip: string, address: string) => {
+    setZipcode(zip);
+    setAddress1(address);
+    // 상세 주소 입력으로 바로 이동
+    requestAnimationFrame(() => document.getElementById("address2")?.focus());
+  }, []);
 
   // 1) 로그인 확인 → 주문 미리보기(서버 금액) → 결제위젯 준비
   useEffect(() => {
@@ -184,18 +194,31 @@ export function CheckoutForm() {
               autoComplete="tel"
               error={errors.receiverPhone}
             />
-            <TextField
-              id="zipcode"
-              label="우편번호"
-              inputMode="numeric"
-              maxLength={5}
-              placeholder="5자리"
-              autoComplete="postal-code"
-              error={errors.zipcode}
-            />
-            <div className="hidden sm:block" />
+            <div className="flex items-end gap-2 sm:col-span-2">
+              <div className="w-36">
+                <TextField
+                  id="zipcode"
+                  label="우편번호"
+                  inputMode="numeric"
+                  maxLength={5}
+                  placeholder="5자리"
+                  autoComplete="postal-code"
+                  value={zipcode}
+                  onChange={(e) => setZipcode(e.target.value)}
+                  error={errors.zipcode}
+                />
+              </div>
+              <AddressSearch onSelect={selectAddress} />
+            </div>
             <div className="sm:col-span-2">
-              <TextField id="address1" label="주소" autoComplete="address-line1" error={errors.address1} />
+              <TextField
+                id="address1"
+                label="주소"
+                autoComplete="address-line1"
+                value={address1}
+                onChange={(e) => setAddress1(e.target.value)}
+                error={errors.address1}
+              />
             </div>
             <div className="sm:col-span-2">
               <TextField id="address2" label="상세 주소" autoComplete="address-line2" error={errors.address2} />

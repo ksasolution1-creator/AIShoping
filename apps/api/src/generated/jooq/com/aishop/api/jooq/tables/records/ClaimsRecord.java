@@ -275,6 +275,111 @@ public class ClaimsRecord extends UpdatableRecordImpl<ClaimsRecord> {
         return (OffsetDateTime) get(16);
     }
 
+    /**
+     * Setter for <code>public.claims.prev_item_status</code>.
+     */
+    public ClaimsRecord setPrevItemStatus(String value) {
+        set(17, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.claims.prev_item_status</code>.
+     */
+    public String getPrevItemStatus() {
+        return (String) get(17);
+    }
+
+    /**
+     * Setter for <code>public.claims.refund_amount</code>.
+     */
+    public ClaimsRecord setRefundAmount(Long value) {
+        set(18, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.claims.refund_amount</code>.
+     */
+    public Long getRefundAmount() {
+        return (Long) get(18);
+    }
+
+    /**
+     * Setter for <code>public.claims.reject_reason</code>.
+     */
+    public ClaimsRecord setRejectReason(String value) {
+        set(19, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.claims.reject_reason</code>.
+     */
+    public String getRejectReason() {
+        return (String) get(19);
+    }
+
+    /**
+     * Setter for <code>public.claims.restock_sku_id</code>.
+     */
+    public ClaimsRecord setRestockSkuId(Long value) {
+        set(20, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.claims.restock_sku_id</code>.
+     */
+    public Long getRestockSkuId() {
+        return (Long) get(20);
+    }
+
+    /**
+     * Setter for <code>public.claims.restock_location_id</code>.
+     */
+    public ClaimsRecord setRestockLocationId(Long value) {
+        set(21, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.claims.restock_location_id</code>.
+     */
+    public Long getRestockLocationId() {
+        return (Long) get(21);
+    }
+
+    /**
+     * Setter for <code>public.claims.pickup_carrier_id</code>.
+     */
+    public ClaimsRecord setPickupCarrierId(Long value) {
+        set(22, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.claims.pickup_carrier_id</code>.
+     */
+    public Long getPickupCarrierId() {
+        return (Long) get(22);
+    }
+
+    /**
+     * Setter for <code>public.claims.pickup_tracking_no</code>.
+     */
+    public ClaimsRecord setPickupTrackingNo(String value) {
+        set(23, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.claims.pickup_tracking_no</code>.
+     */
+    public String getPickupTrackingNo() {
+        return (String) get(23);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -298,7 +403,7 @@ public class ClaimsRecord extends UpdatableRecordImpl<ClaimsRecord> {
     /**
      * Create a detached, initialised ClaimsRecord
      */
-    public ClaimsRecord(Long id, Long orderItemId, String type, Integer qty, String reasonCode, String reasonDetail, String fault, Long returnShippingFee, Long exchangeSkuId, String inspectionGrade, String status, Long requestedBy, Long processedBy, OffsetDateTime requestedAt, OffsetDateTime completedAt, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
+    public ClaimsRecord(Long id, Long orderItemId, String type, Integer qty, String reasonCode, String reasonDetail, String fault, Long returnShippingFee, Long exchangeSkuId, String inspectionGrade, String status, Long requestedBy, Long processedBy, OffsetDateTime requestedAt, OffsetDateTime completedAt, OffsetDateTime createdAt, OffsetDateTime updatedAt, String prevItemStatus, Long refundAmount, String rejectReason, Long restockSkuId, Long restockLocationId, Long pickupCarrierId, String pickupTrackingNo) {
         super(Claims.CLAIMS);
 
         setId(id);
@@ -318,6 +423,13 @@ public class ClaimsRecord extends UpdatableRecordImpl<ClaimsRecord> {
         setCompletedAt(completedAt);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
+        setPrevItemStatus(prevItemStatus);
+        setRefundAmount(refundAmount);
+        setRejectReason(rejectReason);
+        setRestockSkuId(restockSkuId);
+        setRestockLocationId(restockLocationId);
+        setPickupCarrierId(pickupCarrierId);
+        setPickupTrackingNo(pickupTrackingNo);
         resetTouchedOnNotNull();
     }
 }
