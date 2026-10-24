@@ -2,6 +2,7 @@ package com.aishop.api.order;
 
 import static com.aishop.api.jooq.Tables.AUDIT_LOGS;
 import static com.aishop.api.jooq.Tables.CARRIERS;
+import static com.aishop.api.jooq.Tables.CLAIMS;
 import static com.aishop.api.jooq.Tables.CART_ITEMS;
 import static com.aishop.api.jooq.Tables.INVENTORIES;
 import static com.aishop.api.jooq.Tables.INVENTORY_MOVEMENTS;
@@ -11,21 +12,26 @@ import static com.aishop.api.jooq.Tables.ORDER_ITEMS;
 import static com.aishop.api.jooq.Tables.PAYMENTS;
 import static com.aishop.api.jooq.Tables.PRODUCT_IMAGES;
 import static com.aishop.api.jooq.Tables.REFUNDS;
+import static com.aishop.api.jooq.Tables.REVIEWS;
 import static com.aishop.api.jooq.Tables.SHIPMENTS;
 import static com.aishop.api.jooq.Tables.SHIPMENT_ITEMS;
 import static com.aishop.api.jooq.Tables.SKUS;
+import static org.jooq.impl.DSL.coalesce;
 import static org.jooq.impl.DSL.count;
 import static org.jooq.impl.DSL.currentOffsetDateTime;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.noCondition;
+import static org.jooq.impl.DSL.notExists;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.selectOne;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -100,6 +106,39 @@ public class OrderRepository {
 		dsl.update(ORDER_ITEMS).set(ORDER_ITEMS.STATUS, status).where(ORDER_ITEMS.ID.eq(itemId)).execute();
 	}
 
+	/** 구매확정. 배송완료 처리를 안 한 채 확정하면 배송완료 시각도 함께 채운다 */
+	public boolean confirmItem(long itemId) {
+		return dsl.update(ORDER_ITEMS)
+			.set(ORDER_ITEMS.STATUS, "CONFIRMED")
+			.set(ORDER_ITEMS.CONFIRMED_AT, currentOffsetDateTime())
+			.set(ORDER_ITEMS.DELIVERED_AT, coalesce(ORDER_ITEMS.DELIVERED_AT, currentOffsetDateTime()))
+			.where(ORDER_ITEMS.ID.eq(itemId), ORDER_ITEMS.STATUS.in("SHIPPED", "DELIVERED"))
+			.and(notExists(selectOne().from(CLAIMS)
+				.where(CLAIMS.ORDER_ITEM_ID.eq(ORDER_ITEMS.ID), CLAIMS.STATUS.notIn("COMPLETED", "REJECTED", "WITHDRAWN"))))
+			.execute() == 1;
+	}
+
+	/** 배송완료 후 정해진 기간이 지났고 진행 중인 취소·반품이 없는 주문 상품 */
+	public List<Long> findAutoConfirmable(Duration afterDelivery, int limit) {
+		return dsl.select(ORDER_ITEMS.ID)
+			.from(ORDER_ITEMS)
+			.where(ORDER_ITEMS.STATUS.eq("DELIVERED"))
+			.and(ORDER_ITEMS.DELIVERED_AT.lt(OffsetDateTime.now().minus(afterDelivery)))
+			.and(notExists(selectOne().from(CLAIMS)
+				.where(CLAIMS.ORDER_ITEM_ID.eq(ORDER_ITEMS.ID), CLAIMS.STATUS.notIn("COMPLETED", "REJECTED", "WITHDRAWN"))))
+			.orderBy(ORDER_ITEMS.DELIVERED_AT)
+			.limit(limit)
+			.fetch(ORDER_ITEMS.ID);
+	}
+
+	public Set<Long> findReviewedItemIds(long orderId) {
+		return new HashSet<>(dsl.select(REVIEWS.ORDER_ITEM_ID)
+			.from(REVIEWS)
+			.join(ORDER_ITEMS).on(ORDER_ITEMS.ID.eq(REVIEWS.ORDER_ITEM_ID))
+			.where(ORDER_ITEMS.ORDER_ID.eq(orderId))
+			.fetch(REVIEWS.ORDER_ITEM_ID));
+	}
+
 	public List<OrderItemsRecord> findItems(long orderId) {
 		return dsl.selectFrom(ORDER_ITEMS).where(ORDER_ITEMS.ORDER_ID.eq(orderId)).orderBy(ORDER_ITEMS.ID).fetch();
 	}
@@ -120,11 +159,14 @@ public class OrderRepository {
 		return dsl.selectFrom(SHIPMENTS).where(SHIPMENTS.ORDER_ID.eq(orderId)).orderBy(SHIPMENTS.ID).fetch();
 	}
 
-	public Optional<String> findCarrierName(Long carrierId) {
+	public Optional<CarrierOption> findCarrier(Long carrierId) {
 		if (carrierId == null) {
 			return Optional.empty();
 		}
-		return dsl.select(CARRIERS.NAME).from(CARRIERS).where(CARRIERS.ID.eq(carrierId)).fetchOptional(CARRIERS.NAME);
+		return dsl.select(CARRIERS.ID, CARRIERS.CODE, CARRIERS.NAME)
+			.from(CARRIERS)
+			.where(CARRIERS.ID.eq(carrierId))
+			.fetchOptional(r -> new CarrierOption(r.value1(), r.value2(), r.value3()));
 	}
 
 	public List<OrdersRecord> findByUser(long userId, int limit, int offset) {

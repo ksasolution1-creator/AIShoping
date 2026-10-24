@@ -6,6 +6,7 @@ package com.aishop.api.jooq;
 
 import com.aishop.api.jooq.tables.Addresses;
 import com.aishop.api.jooq.tables.AuditLogs;
+import com.aishop.api.jooq.tables.BusinessProfiles;
 import com.aishop.api.jooq.tables.Carriers;
 import com.aishop.api.jooq.tables.CartItems;
 import com.aishop.api.jooq.tables.Categories;
@@ -18,18 +19,26 @@ import com.aishop.api.jooq.tables.OrderItems;
 import com.aishop.api.jooq.tables.Orders;
 import com.aishop.api.jooq.tables.Payments;
 import com.aishop.api.jooq.tables.ProductImages;
+import com.aishop.api.jooq.tables.ProductPriceTiers;
+import com.aishop.api.jooq.tables.ProductQuestions;
 import com.aishop.api.jooq.tables.Products;
+import com.aishop.api.jooq.tables.PurchaseItems;
+import com.aishop.api.jooq.tables.Purchases;
 import com.aishop.api.jooq.tables.Refunds;
+import com.aishop.api.jooq.tables.Reviews;
+import com.aishop.api.jooq.tables.SearchLogs;
 import com.aishop.api.jooq.tables.SellerMembers;
 import com.aishop.api.jooq.tables.Sellers;
 import com.aishop.api.jooq.tables.ShipmentItems;
 import com.aishop.api.jooq.tables.Shipments;
 import com.aishop.api.jooq.tables.Skus;
 import com.aishop.api.jooq.tables.SocialAccounts;
+import com.aishop.api.jooq.tables.Suppliers;
 import com.aishop.api.jooq.tables.TrackingEvents;
 import com.aishop.api.jooq.tables.UserAgreements;
 import com.aishop.api.jooq.tables.UserRoles;
 import com.aishop.api.jooq.tables.Users;
+import com.aishop.api.jooq.tables.Wishlists;
 
 
 /**
@@ -47,6 +56,11 @@ public class Tables {
      * The table <code>public.audit_logs</code>.
      */
     public static final AuditLogs AUDIT_LOGS = AuditLogs.AUDIT_LOGS;
+
+    /**
+     * The table <code>public.business_profiles</code>.
+     */
+    public static final BusinessProfiles BUSINESS_PROFILES = BusinessProfiles.BUSINESS_PROFILES;
 
     /**
      * The table <code>public.carriers</code>.
@@ -109,14 +123,44 @@ public class Tables {
     public static final ProductImages PRODUCT_IMAGES = ProductImages.PRODUCT_IMAGES;
 
     /**
+     * The table <code>public.product_price_tiers</code>.
+     */
+    public static final ProductPriceTiers PRODUCT_PRICE_TIERS = ProductPriceTiers.PRODUCT_PRICE_TIERS;
+
+    /**
+     * The table <code>public.product_questions</code>.
+     */
+    public static final ProductQuestions PRODUCT_QUESTIONS = ProductQuestions.PRODUCT_QUESTIONS;
+
+    /**
      * The table <code>public.products</code>.
      */
     public static final Products PRODUCTS = Products.PRODUCTS;
 
     /**
+     * The table <code>public.purchase_items</code>.
+     */
+    public static final PurchaseItems PURCHASE_ITEMS = PurchaseItems.PURCHASE_ITEMS;
+
+    /**
+     * The table <code>public.purchases</code>.
+     */
+    public static final Purchases PURCHASES = Purchases.PURCHASES;
+
+    /**
      * The table <code>public.refunds</code>.
      */
     public static final Refunds REFUNDS = Refunds.REFUNDS;
+
+    /**
+     * The table <code>public.reviews</code>.
+     */
+    public static final Reviews REVIEWS = Reviews.REVIEWS;
+
+    /**
+     * The table <code>public.search_logs</code>.
+     */
+    public static final SearchLogs SEARCH_LOGS = SearchLogs.SEARCH_LOGS;
 
     /**
      * The table <code>public.seller_members</code>.
@@ -149,6 +193,11 @@ public class Tables {
     public static final SocialAccounts SOCIAL_ACCOUNTS = SocialAccounts.SOCIAL_ACCOUNTS;
 
     /**
+     * The table <code>public.suppliers</code>.
+     */
+    public static final Suppliers SUPPLIERS = Suppliers.SUPPLIERS;
+
+    /**
      * The table <code>public.tracking_events</code>.
      */
     public static final TrackingEvents TRACKING_EVENTS = TrackingEvents.TRACKING_EVENTS;
@@ -167,4 +216,9 @@ public class Tables {
      * The table <code>public.users</code>.
      */
     public static final Users USERS = Users.USERS;
+
+    /**
+     * The table <code>public.wishlists</code>.
+     */
+    public static final Wishlists WISHLISTS = Wishlists.WISHLISTS;
 }

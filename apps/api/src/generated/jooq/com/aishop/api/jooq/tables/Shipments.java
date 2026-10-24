@@ -208,7 +208,7 @@ public class Shipments extends TableImpl<ShipmentsRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IX_SHIPMENTS_ORDER, Indexes.IX_SHIPMENTS_TO_TRACK, Indexes.UX_SHIPMENTS_TRACKING);
+        return Arrays.asList(Indexes.IX_SHIPMENTS_ORDER, Indexes.IX_SHIPMENTS_SELLER_STATUS, Indexes.IX_SHIPMENTS_TO_TRACK, Indexes.UX_SHIPMENTS_TRACKING);
     }
 
     @Override

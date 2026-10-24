@@ -10,6 +10,7 @@ import com.aishop.api.jooq.tables.Claims.ClaimsPath;
 import com.aishop.api.jooq.tables.Inventories.InventoriesPath;
 import com.aishop.api.jooq.tables.InventoryMovements.InventoryMovementsPath;
 import com.aishop.api.jooq.tables.OrderItems.OrderItemsPath;
+import com.aishop.api.jooq.tables.Purchases.PurchasesPath;
 import com.aishop.api.jooq.tables.Sellers.SellersPath;
 import com.aishop.api.jooq.tables.Shipments.ShipmentsPath;
 import com.aishop.api.jooq.tables.Skus.SkusPath;
@@ -240,6 +241,19 @@ public class Locations extends TableImpl<LocationsRecord> {
             _orderItems = new OrderItemsPath(this, null, Keys.ORDER_ITEMS__ORDER_ITEMS_FULFILL_LOCATION_ID_FKEY.getInverseKey());
 
         return _orderItems;
+    }
+
+    private transient PurchasesPath _purchases;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.purchases</code>
+     * table
+     */
+    public PurchasesPath purchases() {
+        if (_purchases == null)
+            _purchases = new PurchasesPath(this, null, Keys.PURCHASES__PURCHASES_LOCATION_ID_FKEY.getInverseKey());
+
+        return _purchases;
     }
 
     private transient ShipmentsPath _shipments;

@@ -10,6 +10,7 @@ import com.aishop.api.jooq.Public;
 import com.aishop.api.jooq.tables.Claims.ClaimsPath;
 import com.aishop.api.jooq.tables.Locations.LocationsPath;
 import com.aishop.api.jooq.tables.Orders.OrdersPath;
+import com.aishop.api.jooq.tables.Reviews.ReviewsPath;
 import com.aishop.api.jooq.tables.Sellers.SellersPath;
 import com.aishop.api.jooq.tables.ShipmentItems.ShipmentItemsPath;
 import com.aishop.api.jooq.tables.Shipments.ShipmentsPath;
@@ -217,7 +218,7 @@ public class OrderItems extends TableImpl<OrderItemsRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IX_ORDER_ITEMS_CONFIRMED, Indexes.IX_ORDER_ITEMS_ORDER, Indexes.IX_ORDER_ITEMS_SELLER_STATUS, Indexes.IX_ORDER_ITEMS_SKU);
+        return Arrays.asList(Indexes.IX_ORDER_ITEMS_CONFIRMED, Indexes.IX_ORDER_ITEMS_DELIVERED, Indexes.IX_ORDER_ITEMS_ORDER, Indexes.IX_ORDER_ITEMS_SELLER_STATUS, Indexes.IX_ORDER_ITEMS_SKU, Indexes.IX_ORDER_ITEMS_SKU_CREATED);
     }
 
     @Override
@@ -294,6 +295,19 @@ public class OrderItems extends TableImpl<OrderItemsRecord> {
             _claims = new ClaimsPath(this, null, Keys.CLAIMS__CLAIMS_ORDER_ITEM_ID_FKEY.getInverseKey());
 
         return _claims;
+    }
+
+    private transient ReviewsPath _reviews;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.reviews</code>
+     * table
+     */
+    public ReviewsPath reviews() {
+        if (_reviews == null)
+            _reviews = new ReviewsPath(this, null, Keys.REVIEWS__REVIEWS_ORDER_ITEM_ID_FKEY.getInverseKey());
+
+        return _reviews;
     }
 
     private transient ShipmentItemsPath _shipmentItems;

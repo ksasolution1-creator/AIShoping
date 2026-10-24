@@ -201,6 +201,36 @@ public class SkusRecord extends UpdatableRecordImpl<SkusRecord> {
         return (OffsetDateTime) get(11);
     }
 
+    /**
+     * Setter for <code>public.skus.cost</code>.
+     */
+    public SkusRecord setCost(Long value) {
+        set(12, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.skus.cost</code>.
+     */
+    public Long getCost() {
+        return (Long) get(12);
+    }
+
+    /**
+     * Setter for <code>public.skus.business_price</code>.
+     */
+    public SkusRecord setBusinessPrice(Long value) {
+        set(13, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.skus.business_price</code>.
+     */
+    public Long getBusinessPrice() {
+        return (Long) get(13);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -224,7 +254,7 @@ public class SkusRecord extends UpdatableRecordImpl<SkusRecord> {
     /**
      * Create a detached, initialised SkusRecord
      */
-    public SkusRecord(Long id, Long productId, String skuCode, JSONB optionValues, String conditionGrade, String conditionNote, String barcode, Long price, Long listPrice, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
+    public SkusRecord(Long id, Long productId, String skuCode, JSONB optionValues, String conditionGrade, String conditionNote, String barcode, Long price, Long listPrice, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt, Long cost, Long businessPrice) {
         super(Skus.SKUS);
 
         setId(id);
@@ -239,6 +269,8 @@ public class SkusRecord extends UpdatableRecordImpl<SkusRecord> {
         setStatus(status);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
+        setCost(cost);
+        setBusinessPrice(businessPrice);
         resetTouchedOnNotNull();
     }
 }

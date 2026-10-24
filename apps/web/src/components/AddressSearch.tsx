@@ -91,7 +91,7 @@ export function AddressSearch({ onSelect }: { onSelect: (zipcode: string, addres
         >
           <div className="flex h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-surface sm:h-[34rem] sm:rounded-2xl">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
-              <span className="font-display text-lg text-navy">주소 검색</span>
+              <span className="text-lg font-bold text-navy">주소 검색</span>
               <button type="button" onClick={() => setOpen(false)} aria-label="닫기" className="text-xl text-ink-faint">
                 ×
               </button>

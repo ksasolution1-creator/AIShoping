@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.aishop.api.auth.AuthUser;
+import com.aishop.api.business.BusinessRepository;
 import com.aishop.api.claim.ClaimService;
 import com.aishop.api.claim.ClaimViews.ClaimView;
 import com.aishop.api.common.crypto.FieldCipher;
@@ -51,16 +52,21 @@ public class OrderService {
 	private final FieldCipher cipher;
 	private final TossPaymentsClient toss;
 	private final ClaimService claimService;
+	private final WholesalePricing wholesale;
+	private final BusinessRepository business;
 	private final SecureRandom random = new SecureRandom();
 
 	public OrderService(OrderRepository orders, PurchaseLineRepository purchaseLines, InventoryRepository inventory,
-			FieldCipher cipher, TossPaymentsClient toss, ClaimService claimService) {
+			FieldCipher cipher, TossPaymentsClient toss, ClaimService claimService, WholesalePricing wholesale,
+			BusinessRepository business) {
 		this.orders = orders;
 		this.purchaseLines = purchaseLines;
 		this.inventory = inventory;
 		this.cipher = cipher;
 		this.toss = toss;
 		this.claimService = claimService;
+		this.wholesale = wholesale;
+		this.business = business;
 	}
 
 	// ------------------------------------------------------------------
@@ -77,11 +83,15 @@ public class OrderService {
 		for (OrderLineRequest line : request.items()) {
 			qtyBySku.merge(line.skuId(), line.qty(), Integer::sum);
 		}
-		Map<Long, PurchaseLine> found = purchaseLines.findBySkuIds(qtyBySku.keySet());
+		Map<Long, PurchaseLine> found = purchaseLines.findBySkuIds(qtyBySku.keySet(),
+				business.isApprovedBusiness(user.id()));
 
 		List<PurchaseLine> lines = new ArrayList<>();
 		for (Map.Entry<Long, Integer> entry : qtyBySku.entrySet()) {
 			PurchaseLine line = found.get(entry.getKey());
+			if (line != null && !line.purchasable() && line.businessOnly()) {
+				throw ApiException.badRequest("BUSINESS_ONLY", "'" + line.productName() + "'은(는) 사업자 회원 전용 상품입니다.");
+			}
 			if (line == null || !line.purchasable()) {
 				throw ApiException.badRequest("NOT_PURCHASABLE", "판매가 끝난 상품이 있습니다. 장바구니를 확인해 주세요.");
 			}
@@ -91,6 +101,11 @@ public class OrderService {
 			}
 			lines.add(line.withQty(entry.getValue()));
 		}
+		WholesalePricing.Applied applied = wholesale.apply(lines);
+		if (!applied.belowMinimum().isEmpty()) {
+			throw ApiException.badRequest("BELOW_MIN_ORDER_QTY", applied.belowMinimum().values().iterator().next());
+		}
+		lines = applied.lines();
 		OrderPricing.Summary summary = OrderPricing.calculate(lines);
 
 		String orderNo = newOrderNo();
@@ -124,7 +139,7 @@ public class OrderService {
 			item.setConditionGrade(line.grade().name());
 			item.setQty(line.qty());
 			item.setUnitPrice(line.price());
-			item.setDiscount(0L);
+			item.setDiscount(line.discountTotal());
 			item.setStatus("PENDING_PAYMENT");
 			item.setFulfillLocationId(locationId);
 			orders.insertOrderItem(item);
@@ -134,39 +149,54 @@ public class OrderService {
 				cipher.opaqueId("toss-customer", user.id()), user.name(), user.email(), toss.clientKey());
 	}
 
+	/**
+	 * @param price 할인 전 단가
+	 * @param unitDiscount 도매 수량 할인으로 단가에서 빠지는 금액
+	 */
 	public record PreviewLine(long skuId, String productName, String optionText, String conditionGrade,
-			String thumbnailUrl, long price, int qty, int available, boolean purchasable, long lineTotal) {
+			String thumbnailUrl, long price, long unitDiscount, int qty, int available, boolean purchasable,
+			long lineTotal) {
 	}
 
-	public record Preview(List<PreviewLine> lines, long itemsTotal, long shippingFee, long payAmount,
-			boolean allPurchasable) {
+	/** @param notices 최소구매수량 미달 등 주문 전에 고쳐야 할 안내 */
+	public record Preview(List<PreviewLine> lines, long itemsTotal, long discountTotal, long shippingFee,
+			long payAmount, boolean allPurchasable, List<String> notices) {
 	}
 
 	/** 주문서 미리보기: 서버 기준 금액과 구매 가능 여부 (재고는 예약하지 않음) */
 	@Transactional(readOnly = true)
-	public Preview preview(List<OrderLineRequest> requested) {
+	public Preview preview(Long buyerId, List<OrderLineRequest> requested) {
 		Map<Long, Integer> qtyBySku = new LinkedHashMap<>();
 		requested.forEach(line -> qtyBySku.merge(line.skuId(), line.qty(), Integer::sum));
-		Map<Long, PurchaseLine> found = purchaseLines.findBySkuIds(qtyBySku.keySet());
+		Map<Long, PurchaseLine> found = purchaseLines.findBySkuIds(qtyBySku.keySet(),
+				business.isApprovedBusiness(buyerId));
+
+		List<PurchaseLine> requestedLines = qtyBySku.entrySet().stream()
+			.filter(e -> found.containsKey(e.getKey()))
+			.map(e -> found.get(e.getKey()).withQty(e.getValue()))
+			.toList();
+		WholesalePricing.Applied applied = wholesale.apply(requestedLines);
 
 		List<PreviewLine> lines = new ArrayList<>();
 		List<PurchaseLine> buyable = new ArrayList<>();
-		for (Map.Entry<Long, Integer> entry : qtyBySku.entrySet()) {
-			PurchaseLine line = found.get(entry.getKey());
-			if (line == null) {
-				continue;
-			}
-			PurchaseLine withQty = line.withQty(entry.getValue());
-			boolean ok = line.purchasable() && line.available() >= entry.getValue();
+		for (PurchaseLine line : applied.lines()) {
+			boolean ok = line.purchasable() && line.available() >= line.qty();
 			if (ok) {
-				buyable.add(withQty);
+				buyable.add(line);
 			}
 			lines.add(new PreviewLine(line.skuId(), line.productName(), line.optionText(), line.grade().label(),
-					line.thumbnailUrl(), line.price(), entry.getValue(), line.available(), ok, withQty.lineTotal()));
+					line.thumbnailUrl(), line.price(), line.unitDiscount(), line.qty(), line.available(), ok,
+					line.lineTotal()));
 		}
 		OrderPricing.Summary summary = OrderPricing.calculate(buyable);
-		return new Preview(lines, summary.itemsTotal(), summary.shippingFee(), summary.payAmount(),
-				!lines.isEmpty() && lines.size() == qtyBySku.size() && buyable.size() == lines.size());
+		List<String> notices = new ArrayList<>(applied.belowMinimum().values());
+		applied.lines().stream()
+			.filter(l -> !l.purchasable() && l.businessOnly())
+			.forEach(l -> notices.add("'" + l.productName() + "'은(는) 사업자 회원 전용 상품입니다."));
+		return new Preview(lines, summary.itemsTotal(), summary.discountTotal(), summary.shippingFee(),
+				summary.payAmount(), !lines.isEmpty() && lines.size() == qtyBySku.size()
+						&& buyable.size() == lines.size() && notices.isEmpty(),
+				notices);
 	}
 
 	/** 판매자의 재고 위치 중 남은 수량이 있는 곳에 예약한다 */
@@ -206,6 +236,21 @@ public class OrderService {
 	public PageResponse<OrderSummary> myOrders(long userId, int page, int size) {
 		List<OrderSummary> items = orders.findByUser(userId, size, page * size).stream().map(this::toSummary).toList();
 		return new PageResponse<>(items, page, size, orders.countByUser(userId));
+	}
+
+	/** 고객이 직접 구매확정. 확정하면 온라인 반품 신청을 더 받지 않고, 구매후기를 쓸 수 있다 */
+	@Transactional
+	public OrderDetail confirmPurchase(long userId, String orderNo, long itemId) {
+		OrdersRecord order = orders.findByOrderNo(orderNo)
+			.filter(o -> o.getUserId() != null && o.getUserId() == userId)
+			.orElseThrow(() -> ApiException.notFound("주문"));
+		OrderItemsRecord item = orders.findItem(itemId)
+			.filter(i -> i.getOrderId().equals(order.getId()))
+			.orElseThrow(() -> ApiException.notFound("주문 상품"));
+		if (!orders.confirmItem(item.getId())) {
+			throw ApiException.conflict("NOT_CONFIRMABLE", "배송이 시작됐고 취소·반품이 진행 중이 아닌 상품만 구매확정할 수 있습니다.");
+		}
+		return myOrder(userId, orderNo);
 	}
 
 	@Transactional(readOnly = true)
@@ -316,10 +361,11 @@ public class OrderService {
 		List<OrderItemsRecord> items = orders.findItems(order.getId()).stream()
 			.filter(i -> sellerId == null || i.getSellerId() == sellerId)
 			.toList();
+		Set<Long> reviewed = orders.findReviewedItemIds(order.getId());
 		List<OrderLineView> lines = items.stream()
 			.map(i -> new OrderLineView(i.getId(), i.getSkuId(), i.getProductName(), i.getOptionText(),
 					i.getConditionGrade(), orders.findThumbnail(i.getSkuId()).orElse(null), i.getQty(), i.getUnitPrice(),
-					i.getUnitPrice() * i.getQty() - i.getDiscount(), i.getStatus()))
+					i.getUnitPrice() * i.getQty() - i.getDiscount(), i.getStatus(), reviewed.contains(i.getId())))
 			.toList();
 		PaymentView payment = orders.findDonePayment(order.getId())
 			.map(p -> new PaymentView(p.getMethod(), p.getEasyPayProvider(), p.getAmount(), p.getBalanceAmount(),
@@ -327,8 +373,12 @@ public class OrderService {
 			.orElse(null);
 		List<ShipmentView> shipments = orders.findShipments(order.getId()).stream()
 			.filter(s -> sellerId == null || s.getSellerId() == sellerId)
-			.map(s -> new ShipmentView(s.getId(), orders.findCarrierName(s.getCarrierId()).orElse("-"),
-					s.getTrackingNo(), s.getStatus(), s.getShippedAt(), s.getDeliveredAt()))
+			.map(s -> {
+				var carrier = orders.findCarrier(s.getCarrierId());
+				return new ShipmentView(s.getId(), carrier.map(CarrierOption::name).orElse("-"), s.getTrackingNo(),
+						TrackingLinks.url(carrier.map(CarrierOption::code).orElse(null), s.getTrackingNo()), s.getStatus(),
+						s.getShippedAt(), s.getDeliveredAt());
+			})
 			.toList();
 		Receiver receiver = new Receiver(order.getReceiverName(), cipher.decrypt(order.getReceiverPhoneEnc()),
 				order.getReceiverZipcode(), cipher.decrypt(order.getReceiverAddress1Enc()),

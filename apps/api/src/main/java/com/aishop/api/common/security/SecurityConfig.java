@@ -39,7 +39,8 @@ public class SecurityConfig {
 				.requestMatchers("/files/**").permitAll()
 				.requestMatchers("/api/auth/**").permitAll()
 				.requestMatchers(HttpMethod.POST, "/api/payments/webhook").permitAll()
-				.requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories", "/api/condition-grades")
+				.requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories", "/api/condition-grades",
+						"/api/search/popular")
 				.permitAll()
 				.requestMatchers("/api/admin/**").hasAnyRole(STAFF_ROLES)
 				.anyRequest().authenticated())

@@ -24,18 +24,24 @@ import com.aishop.api.catalog.CatalogViews.ShopProductDetail;
 import com.aishop.api.common.storage.FileStorage;
 import com.aishop.api.common.web.ApiException;
 import com.aishop.api.common.web.PageResponse;
+import com.aishop.api.inventory.InventoryRepository;
 
 @Service
 public class ProductService {
 
 	private final ProductRepository products;
 	private final CategoryRepository categories;
+	private final InventoryRepository inventory;
 	private final FileStorage fileStorage;
+	private final WholesaleRepository wholesale;
 
-	public ProductService(ProductRepository products, CategoryRepository categories, FileStorage fileStorage) {
+	public ProductService(ProductRepository products, CategoryRepository categories, InventoryRepository inventory,
+			FileStorage fileStorage, WholesaleRepository wholesale) {
 		this.products = products;
 		this.categories = categories;
+		this.inventory = inventory;
 		this.fileStorage = fileStorage;
+		this.wholesale = wholesale;
 	}
 
 	// ------------------------------------------------------------------
@@ -44,8 +50,21 @@ public class ProductService {
 
 	@Transactional(readOnly = true)
 	public PageResponse<ProductCard> searchShop(String keyword, Long categoryId, ProductSort sort, int page, int size) {
+		return searchShop(keyword, categoryId, sort, false, page, size);
+	}
+
+	@Transactional(readOnly = true)
+	public PageResponse<ProductCard> searchShop(String keyword, Long categoryId, ProductSort sort, boolean ddaengOnly,
+			int page, int size) {
 		List<Long> categoryIds = categoryId == null ? null : categories.findSelfAndDescendantIds(categoryId);
-		return products.findShopProducts(new ShopSearch(keyword, categoryIds, sort, page, size));
+		return products.findShopProducts(new ShopSearch(keyword, categoryIds, sort, ddaengOnly, page, size));
+	}
+
+	@Transactional
+	public AdminProductDetail updateSpec(long sellerId, long productId, ProductSpec spec) {
+		requireProduct(sellerId, productId);
+		products.updateSpec(productId, spec);
+		return getAdminProduct(sellerId, productId);
 	}
 
 	@Transactional(readOnly = true)
@@ -65,6 +84,26 @@ public class ProductService {
 	@Transactional(readOnly = true)
 	public AdminProductDetail getAdminProduct(long sellerId, long productId) {
 		return products.findAdminProduct(sellerId, productId).orElseThrow(() -> ApiException.notFound("상품"));
+	}
+
+	/** 도매 구매조건 저장. 수량별 할인은 수량이 클수록 할인율도 커야 한다 */
+	@Transactional
+	public AdminProductDetail updateWholesale(long sellerId, long productId, WholesaleTerms terms) {
+		requireProduct(sellerId, productId);
+		int lastQty = 0;
+		int lastBp = 0;
+		for (WholesaleTerms.PriceTier tier : terms.tiers()) {
+			if (tier.minQty() == lastQty) {
+				throw ApiException.badRequest("DUPLICATE_TIER", tier.minQty() + "개 할인이 두 번 들어 있습니다.");
+			}
+			if (tier.discountBp() <= lastBp) {
+				throw ApiException.badRequest("TIER_ORDER", "많이 살수록 할인율이 커지도록 정해 주세요.");
+			}
+			lastQty = tier.minQty();
+			lastBp = tier.discountBp();
+		}
+		wholesale.save(productId, terms);
+		return getAdminProduct(sellerId, productId);
 	}
 
 	/** 상품과 SKU를 만들고 초기 재고를 기본 창고에 넣는다. 상품은 준비중(DRAFT)으로 시작한다. */
@@ -131,11 +170,11 @@ public class ProductService {
 		if (!products.locationBelongsTo(sellerId, locationId)) {
 			throw ApiException.notFound("재고 위치");
 		}
-		if (!products.changeOnHand(skuId, locationId, request.qty())) {
+		if (!inventory.changeOnHand(skuId, locationId, request.qty())) {
 			throw ApiException.conflict("INSUFFICIENT_STOCK", "보유 재고나 주문 예약 수량보다 많이 줄일 수 없습니다.");
 		}
-		products.insertMovement(skuId, locationId, request.qty(), "ADJUST",
-				isBlank(request.memo()) ? "수동 조정" : request.memo().strip());
+		inventory.insertMovement(skuId, locationId, request.qty(), "ADJUST", null, null,
+				isBlank(request.memo()) ? "수동 조정" : request.memo().strip(), null);
 	}
 
 	@Transactional
@@ -181,8 +220,8 @@ public class ProductService {
 
 	private void receiveInitialStock(long skuId, long warehouseId, int qty, String memo) {
 		if (qty > 0) {
-			products.changeOnHand(skuId, warehouseId, qty);
-			products.insertMovement(skuId, warehouseId, qty, "ADJUST", memo);
+			inventory.changeOnHand(skuId, warehouseId, qty);
+			inventory.insertMovement(skuId, warehouseId, qty, "ADJUST", null, null, memo, null);
 		}
 	}
 

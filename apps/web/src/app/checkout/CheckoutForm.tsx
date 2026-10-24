@@ -175,6 +175,9 @@ export function CheckoutForm() {
                       {line.available <= 0 ? "품절되었습니다" : `남은 수량 ${line.available}개`}
                     </span>
                   )}
+                  {line.unitDiscount > 0 && (
+                    <span className="text-xs text-brand">수량 할인 개당 −{formatWon(line.unitDiscount)}</span>
+                  )}
                 </div>
                 <span className="text-sm font-bold tabular-nums">{formatWon(line.lineTotal)}</span>
               </li>
@@ -237,9 +240,18 @@ export function CheckoutForm() {
               결제 준비가 아직 끝나지 않았습니다. (토스페이먼츠 키 설정 필요)
             </p>
           ) : !preview.allPurchasable ? (
-            <p className="rounded-md bg-sale/10 p-4 text-sm text-sale">
-              구매할 수 없는 상품이 있습니다. 장바구니에서 수량을 조정해 주세요.
-            </p>
+            <div className="rounded-md bg-sale/10 p-4 text-sm text-sale">
+              {preview.notices.length > 0 ? (
+                <ul className="flex flex-col gap-1">
+                  {preview.notices.map((n) => (
+                    <li key={n}>{n}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p>구매할 수 없는 상품이 있습니다.</p>
+              )}
+              <p className="mt-1">장바구니에서 수량을 조정해 주세요.</p>
+            </div>
           ) : (
             <>
               <div id="payment-method" />
@@ -255,6 +267,12 @@ export function CheckoutForm() {
             <dt className="text-ink-soft">상품 금액</dt>
             <dd className="tabular-nums">{formatWon(preview.itemsTotal)}</dd>
           </div>
+          {preview.discountTotal > 0 && (
+            <div className="flex justify-between text-brand">
+              <dt>수량 할인</dt>
+              <dd className="tabular-nums">−{formatWon(preview.discountTotal)}</dd>
+            </div>
+          )}
           <div className="flex justify-between">
             <dt className="text-ink-soft">배송비</dt>
             <dd className="tabular-nums">{preview.shippingFee === 0 ? "무료" : formatWon(preview.shippingFee)}</dd>

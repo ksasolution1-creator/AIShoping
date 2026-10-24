@@ -85,7 +85,6 @@ services:
     environment:
       SHOP_DOMAIN: ${SHOP_DOMAIN:?SHOP_DOMAIN을 .env에 넣어 주세요}
       ADMIN_DOMAIN: ${ADMIN_DOMAIN:?ADMIN_DOMAIN을 .env에 넣어 주세요}
-      ACME_EMAIL: ${ACME_EMAIL:-}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data

@@ -15,6 +15,7 @@ import com.aishop.api.jooq.tables.Locations.LocationsPath;
 import com.aishop.api.jooq.tables.OrderItems.OrderItemsPath;
 import com.aishop.api.jooq.tables.ProductImages.ProductImagesPath;
 import com.aishop.api.jooq.tables.Products.ProductsPath;
+import com.aishop.api.jooq.tables.PurchaseItems.PurchaseItemsPath;
 import com.aishop.api.jooq.tables.Users.UsersPath;
 import com.aishop.api.jooq.tables.records.SkusRecord;
 
@@ -130,6 +131,16 @@ public class Skus extends TableImpl<SkusRecord> {
      * The column <code>public.skus.updated_at</code>.
      */
     public final TableField<SkusRecord, OffsetDateTime> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6).nullable(false).defaultValue(DSL.field(DSL.raw("now()"), SQLDataType.TIMESTAMPWITHTIMEZONE)), this, "");
+
+    /**
+     * The column <code>public.skus.cost</code>.
+     */
+    public final TableField<SkusRecord, Long> COST = createField(DSL.name("cost"), SQLDataType.BIGINT, this, "");
+
+    /**
+     * The column <code>public.skus.business_price</code>.
+     */
+    public final TableField<SkusRecord, Long> BUSINESS_PRICE = createField(DSL.name("business_price"), SQLDataType.BIGINT, this, "");
 
     private Skus(Name alias, Table<SkusRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
@@ -326,6 +337,19 @@ public class Skus extends TableImpl<SkusRecord> {
         return _productImages;
     }
 
+    private transient PurchaseItemsPath _purchaseItems;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.purchase_items</code> table
+     */
+    public PurchaseItemsPath purchaseItems() {
+        if (_purchaseItems == null)
+            _purchaseItems = new PurchaseItemsPath(this, null, Keys.PURCHASE_ITEMS__PURCHASE_ITEMS_SKU_ID_FKEY.getInverseKey());
+
+        return _purchaseItems;
+    }
+
     /**
      * Get the implicit many-to-many join path to the <code>public.users</code>
      * table
@@ -345,7 +369,9 @@ public class Skus extends TableImpl<SkusRecord> {
     @Override
     public List<Check<SkusRecord>> getChecks() {
         return Arrays.asList(
+            Internal.createCheck(this, DSL.name("skus_business_price_check"), "((business_price >= 0))", true),
             Internal.createCheck(this, DSL.name("skus_condition_grade_check"), "((condition_grade = ANY (ARRAY['NEW'::text, 'RETURN_UNOPENED'::text, 'RETURN_OPENED'::text, 'REFURB'::text, 'USED_A'::text, 'USED_B'::text, 'USED_C'::text, 'DISPLAY'::text])))", true),
+            Internal.createCheck(this, DSL.name("skus_cost_check"), "((cost >= 0))", true),
             Internal.createCheck(this, DSL.name("skus_list_price_check"), "((list_price >= 0))", true),
             Internal.createCheck(this, DSL.name("skus_price_check"), "((price >= 0))", true),
             Internal.createCheck(this, DSL.name("skus_status_check"), "((status = ANY (ARRAY['ACTIVE'::text, 'INACTIVE'::text, 'DELETED'::text])))", true)

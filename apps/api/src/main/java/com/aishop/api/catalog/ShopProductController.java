@@ -1,5 +1,6 @@
 package com.aishop.api.catalog;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
@@ -22,9 +23,11 @@ public class ShopProductController {
 	private static final int MAX_PAGE_SIZE = 60;
 
 	private final ProductService productService;
+	private final SearchLogRepository searchLogs;
 
-	public ShopProductController(ProductService productService) {
+	public ShopProductController(ProductService productService, SearchLogRepository searchLogs) {
 		this.productService = productService;
+		this.searchLogs = searchLogs;
 	}
 
 	@GetMapping("/products")
@@ -32,9 +35,21 @@ public class ShopProductController {
 			@RequestParam(required = false) String q,
 			@RequestParam(required = false) Long categoryId,
 			@RequestParam(defaultValue = "NEWEST") ProductSort sort,
+			@RequestParam(defaultValue = "false") boolean ddaeng,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "24") int size) {
-		return productService.searchShop(q, categoryId, sort, Math.max(page, 0), Math.clamp(size, 1, MAX_PAGE_SIZE));
+		// 첫 페이지 검색만 인기검색어 집계에 남긴다 (다음 페이지 넘김은 같은 검색)
+		if (q != null && !q.isBlank() && q.strip().length() <= 30 && page == 0) {
+			searchLogs.log(q.strip());
+		}
+		return productService.searchShop(q, categoryId, sort, ddaeng, Math.max(page, 0),
+				Math.clamp(size, 1, MAX_PAGE_SIZE));
+	}
+
+	/** 최근 7일 인기검색어 10개 */
+	@GetMapping("/search/popular")
+	public List<String> popularKeywords() {
+		return searchLogs.popular(Duration.ofDays(7), 10);
 	}
 
 	@GetMapping("/products/{id}")

@@ -38,8 +38,9 @@ public class AdminBootstrap implements ApplicationRunner {
 		if (email.isBlank() || password.isBlank() || authService.emailInUse(email)) {
 			return;
 		}
-		if (password.length() < 10) {
-			log.warn("관리자 계정을 만들지 않았습니다: ADMIN_PASSWORD는 10자 이상이어야 합니다.");
+		if (password.length() < AuthService.STAFF_MIN_PASSWORD_LENGTH) {
+			log.warn("관리자 계정을 만들지 않았습니다: ADMIN_PASSWORD는 {}자 이상이어야 합니다.",
+					AuthService.STAFF_MIN_PASSWORD_LENGTH);
 			return;
 		}
 		authService.createStaff(email, password, "관리자", Set.of("ADMIN"), AdminContext.HEAD_OFFICE_SELLER_ID);

@@ -21,6 +21,9 @@ import {
   type ProductStatus,
   type SkuStatus,
 } from "@/lib/api";
+import { BusinessSection } from "./BusinessSection";
+import { SpecSection } from "./SpecSection";
+import { WholesaleSection } from "./WholesaleSection";
 
 const SHOP_URL = process.env.NEXT_PUBLIC_SHOP_URL ?? "http://localhost:3000";
 
@@ -112,6 +115,9 @@ export function ProductEditor({ id, created }: { id: number; created: boolean })
       </div>
 
       <SkuSection product={product} onChanged={reload} show={show} />
+      <SpecSection key={`s-${product.updatedAt}`} product={product} onSaved={setProduct} show={show} />
+      <WholesaleSection key={product.updatedAt} product={product} onSaved={setProduct} show={show} />
+      <BusinessSection key={`b-${product.updatedAt}`} product={product} onSaved={setProduct} show={show} />
       <ImageSection product={product} onChanged={reload} show={show} />
       <BasicInfoSection product={product} onSaved={setProduct} show={show} />
     </div>

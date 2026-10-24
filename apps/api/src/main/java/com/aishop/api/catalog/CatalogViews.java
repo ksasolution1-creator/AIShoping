@@ -30,7 +30,8 @@ public final class CatalogViews {
 			long minPrice,
 			Long maxListPrice,
 			List<Grade> grades,
-			int availableQty) {
+			int availableQty,
+			boolean businessOnly) {
 	}
 
 	public record Image(long id, Long skuId, String url, int sortOrder) {
@@ -44,6 +45,7 @@ public final class CatalogViews {
 			String conditionNote,
 			long price,
 			Long listPrice,
+			Long businessPrice,
 			int availableQty) {
 	}
 
@@ -58,8 +60,26 @@ public final class CatalogViews {
 			String kcCertNo,
 			long shippingFee,
 			Long freeShippingThreshold,
+			boolean businessOnly,
+			boolean imageReuseAllowed,
+			WholesaleTerms wholesale,
+			ProductSpec spec,
+			ReturnInfo returnInfo,
+			List<CategoryPathItem> categoryPath,
 			List<ShopSku> skus,
 			List<Image> images) {
+	}
+
+	/**
+	 * 반품 안내. 단순 변심 반품비는 편도 배송비, 무료배송으로 받은 주문은 왕복.
+	 *
+	 * @param returnAddress 판매자가 정한 반품지 (없으면 null)
+	 */
+	public record ReturnInfo(String returnZipcode, String returnAddress, long oneWayFee) {
+	}
+
+	/** 상품 상세 위쪽의 카테고리 경로 (최상위부터) */
+	public record CategoryPathItem(long id, String name) {
 	}
 
 	/** 관리자 상품 목록 행 */
@@ -86,6 +106,7 @@ public final class CatalogViews {
 			String barcode,
 			long price,
 			Long listPrice,
+			Long businessPrice,
 			SkuStatus status,
 			int onHand,
 			int reserved) {
@@ -106,6 +127,10 @@ public final class CatalogViews {
 			ProductStatus status,
 			OffsetDateTime createdAt,
 			OffsetDateTime updatedAt,
+			boolean businessOnly,
+			boolean imageReuseAllowed,
+			WholesaleTerms wholesale,
+			ProductSpec spec,
 			List<AdminSku> skus,
 			List<Image> images) {
 	}

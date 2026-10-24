@@ -9,8 +9,10 @@ import com.aishop.api.jooq.Public;
 import com.aishop.api.jooq.tables.Locations.LocationsPath;
 import com.aishop.api.jooq.tables.OrderItems.OrderItemsPath;
 import com.aishop.api.jooq.tables.Products.ProductsPath;
+import com.aishop.api.jooq.tables.Purchases.PurchasesPath;
 import com.aishop.api.jooq.tables.SellerMembers.SellerMembersPath;
 import com.aishop.api.jooq.tables.Shipments.ShipmentsPath;
+import com.aishop.api.jooq.tables.Suppliers.SuppliersPath;
 import com.aishop.api.jooq.tables.Users.UsersPath;
 import com.aishop.api.jooq.tables.records.SellersRecord;
 
@@ -135,6 +137,36 @@ public class Sellers extends TableImpl<SellersRecord> {
      */
     public final TableField<SellersRecord, OffsetDateTime> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6).nullable(false).defaultValue(DSL.field(DSL.raw("now()"), SQLDataType.TIMESTAMPWITHTIMEZONE)), this, "");
 
+    /**
+     * The column <code>public.sellers.sender_name</code>.
+     */
+    public final TableField<SellersRecord, String> SENDER_NAME = createField(DSL.name("sender_name"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.sellers.sender_phone</code>.
+     */
+    public final TableField<SellersRecord, String> SENDER_PHONE = createField(DSL.name("sender_phone"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.sellers.ship_from_zipcode</code>.
+     */
+    public final TableField<SellersRecord, String> SHIP_FROM_ZIPCODE = createField(DSL.name("ship_from_zipcode"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.sellers.ship_from_address</code>.
+     */
+    public final TableField<SellersRecord, String> SHIP_FROM_ADDRESS = createField(DSL.name("ship_from_address"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.sellers.return_zipcode</code>.
+     */
+    public final TableField<SellersRecord, String> RETURN_ZIPCODE = createField(DSL.name("return_zipcode"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.sellers.return_address</code>.
+     */
+    public final TableField<SellersRecord, String> RETURN_ADDRESS = createField(DSL.name("return_address"), SQLDataType.CLOB, this, "");
+
     private Sellers(Name alias, Table<SellersRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -256,6 +288,19 @@ public class Sellers extends TableImpl<SellersRecord> {
         return _products;
     }
 
+    private transient PurchasesPath _purchases;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.purchases</code>
+     * table
+     */
+    public PurchasesPath purchases() {
+        if (_purchases == null)
+            _purchases = new PurchasesPath(this, null, Keys.PURCHASES__PURCHASES_SELLER_ID_FKEY.getInverseKey());
+
+        return _purchases;
+    }
+
     private transient SellerMembersPath _sellerMembers;
 
     /**
@@ -280,6 +325,19 @@ public class Sellers extends TableImpl<SellersRecord> {
             _shipments = new ShipmentsPath(this, null, Keys.SHIPMENTS__SHIPMENTS_SELLER_ID_FKEY.getInverseKey());
 
         return _shipments;
+    }
+
+    private transient SuppliersPath _suppliers;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.suppliers</code>
+     * table
+     */
+    public SuppliersPath suppliers() {
+        if (_suppliers == null)
+            _suppliers = new SuppliersPath(this, null, Keys.SUPPLIERS__SUPPLIERS_SELLER_ID_FKEY.getInverseKey());
+
+        return _suppliers;
     }
 
     /**

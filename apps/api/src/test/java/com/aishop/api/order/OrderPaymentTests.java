@@ -299,7 +299,7 @@ class OrderPaymentTests {
 
 	private static PurchaseLine line(long sellerId, long price, long shippingFee, Long threshold, int qty) {
 		return new PurchaseLine(1, 1, sellerId, "상품", Map.of(), ConditionGrade.NEW, price, null, shippingFee, threshold,
-				null, 10, true, qty);
+				null, 10, true, qty, 0, false);
 	}
 
 }

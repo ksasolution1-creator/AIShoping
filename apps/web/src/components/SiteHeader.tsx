@@ -36,6 +36,17 @@ export function SiteHeader() {
           </Suspense>
         </nav>
       </div>
+      <nav aria-label="바로가기" className="mx-auto flex max-w-6xl gap-5 overflow-x-auto px-4 pb-2 text-sm font-semibold sm:px-6">
+        <Link href="/?sort=BEST" className="shrink-0 text-ink hover:text-brand">
+          베스트
+        </Link>
+        <Link href="/?ddaeng=1" className="shrink-0 text-sale hover:underline">
+          땡처리관
+        </Link>
+        <Link href="/" className="shrink-0 text-ink hover:text-brand">
+          신상품
+        </Link>
+      </nav>
     </header>
   );
 }

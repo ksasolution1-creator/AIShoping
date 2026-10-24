@@ -33,8 +33,12 @@ public class PurchaseLineRepository {
 		this.jsonb = jsonb;
 	}
 
-	/** SKU ID → 구매 정보 (수량은 1로 채움). 없는 SKU는 결과에서 빠진다 */
-	public Map<Long, PurchaseLine> findBySkuIds(Collection<Long> skuIds) {
+	/**
+	 * SKU ID → 구매 정보 (수량은 1로 채움). 없는 SKU는 결과에서 빠진다.
+	 *
+	 * @param business 승인된 사업자 회원이면 사업자 회원가를 쓰고 사업자 전용 상품도 살 수 있다
+	 */
+	public Map<Long, PurchaseLine> findBySkuIds(Collection<Long> skuIds, boolean business) {
 		if (skuIds.isEmpty()) {
 			return Map.of();
 		}
@@ -50,15 +54,17 @@ public class PurchaseLineRepository {
 		Map<Long, PurchaseLine> result = new LinkedHashMap<>();
 		dsl.select(SKUS.ID, SKUS.PRODUCT_ID, PRODUCTS.SELLER_ID, PRODUCTS.NAME, SKUS.OPTION_VALUES,
 				SKUS.CONDITION_GRADE, SKUS.PRICE, SKUS.LIST_PRICE, PRODUCTS.SHIPPING_FEE,
-				PRODUCTS.FREE_SHIPPING_THRESHOLD, thumbnail, available, PRODUCTS.STATUS, SKUS.STATUS)
+				PRODUCTS.FREE_SHIPPING_THRESHOLD, thumbnail, available, PRODUCTS.STATUS, SKUS.STATUS,
+				SKUS.BUSINESS_PRICE, PRODUCTS.BUSINESS_ONLY)
 			.from(SKUS)
 			.join(PRODUCTS).on(PRODUCTS.ID.eq(SKUS.PRODUCT_ID))
 			.where(SKUS.ID.in(skuIds))
 			.forEach(r -> result.put(r.value1(), new PurchaseLine(
 					r.value1(), r.value2(), r.value3(), r.value4(), jsonb.toStringMap(r.value5()),
-					ConditionGrade.valueOf(r.value6()), r.value7(), r.value8(), r.value9(), r.value10(), r.value11(),
-					r.value12() == null ? 0 : r.value12().intValue(),
-					"ON_SALE".equals(r.value13()) && "ACTIVE".equals(r.value14()), 1)));
+					ConditionGrade.valueOf(r.value6()),
+					business && r.value15() != null ? r.value15() : r.value7(), r.value8(), r.value9(), r.value10(),
+					r.value11(), r.value12() == null ? 0 : r.value12().intValue(),
+					"ON_SALE".equals(r.value13()) && "ACTIVE".equals(r.value14()) && (business || !r.value16()), 1, 0, r.value16())));
 		return result;
 	}
 

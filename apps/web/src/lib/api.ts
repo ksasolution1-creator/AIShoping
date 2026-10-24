@@ -29,6 +29,8 @@ export type ProductCard = {
   maxListPrice: number | null;
   grades: Grade[];
   availableQty: number;
+  /** 사업자 회원 전용 상품 */
+  businessOnly: boolean;
 };
 
 export type Page<T> = {
@@ -53,7 +55,22 @@ export type ShopSku = {
   conditionNote: string | null;
   price: number;
   listPrice: number | null;
+  /** 사업자 인증 회원에게 적용하는 판매가 */
+  businessPrice: number | null;
   availableQty: number;
+};
+
+export type PriceTier = { minQty: number; discountBp: number };
+
+/** 도매 구매조건: 최소구매수량, 결제 후 출고까지 걸리는 날, 수량별 할인 */
+export type WholesaleTerms = { minOrderQty: number; shipWithinDays: number; tiers: PriceTier[] };
+
+/** 원산지·제조사·포장 부피/무게 */
+export type ProductSpec = {
+  origin: string | null;
+  manufacturer: string | null;
+  packageSize: string | null;
+  packageWeightG: number | null;
 };
 
 export type ProductDetail = {
@@ -67,11 +84,18 @@ export type ProductDetail = {
   kcCertNo: string | null;
   shippingFee: number;
   freeShippingThreshold: number | null;
+  businessOnly: boolean;
+  /** 상세이미지를 재판매에 써도 되는지 */
+  imageReuseAllowed: boolean;
+  wholesale: WholesaleTerms;
+  spec: ProductSpec;
+  returnInfo: { returnZipcode: string | null; returnAddress: string | null; oneWayFee: number };
+  categoryPath: { id: number; name: string }[];
   skus: ShopSku[];
   images: ProductImage[];
 };
 
-export type ProductSort = "NEWEST" | "PRICE_ASC" | "PRICE_DESC";
+export type ProductSort = "NEWEST" | "PRICE_ASC" | "PRICE_DESC" | "BEST";
 
 export class ApiError extends Error {
   constructor(
@@ -99,6 +123,8 @@ export function fetchProducts(params: {
   q?: string;
   categoryId?: number;
   sort?: ProductSort;
+  /** 정가 대비 40% 이상 싼 상품만 (땡처리관) */
+  ddaeng?: boolean;
   page?: number;
   size?: number;
 }) {
@@ -106,9 +132,15 @@ export function fetchProducts(params: {
   if (params.q) search.set("q", params.q);
   if (params.categoryId) search.set("categoryId", String(params.categoryId));
   if (params.sort) search.set("sort", params.sort);
+  if (params.ddaeng) search.set("ddaeng", "true");
   if (params.page) search.set("page", String(params.page));
   search.set("size", String(params.size ?? 24));
   return get<Page<ProductCard>>(`/api/products?${search}`);
+}
+
+/** 최근 7일 인기검색어 */
+export function fetchPopularKeywords() {
+  return get<string[]>("/api/search/popular");
 }
 
 export function fetchProduct(id: number) {

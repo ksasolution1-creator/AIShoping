@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.aishop.api.auth.AuthRequests.ChangePassword;
 import com.aishop.api.auth.AuthRequests.Login;
 import com.aishop.api.auth.AuthRequests.Signup;
 import com.aishop.api.auth.AuthRequests.Withdraw;
@@ -79,6 +80,15 @@ public class AuthController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void logout(HttpServletRequest request, HttpServletResponse response) {
 		endSession(request, response);
+	}
+
+	/** 비밀번호 변경. 세션 ID를 새로 발급해 변경 전 세션 값을 다시 쓸 수 없게 한다. */
+	@PostMapping("/api/me/password")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void changePassword(@AuthenticationPrincipal AuthUser user, @Valid @RequestBody ChangePassword body,
+			HttpServletRequest request) {
+		authService.changePassword(user.id(), body.currentPassword(), body.newPassword());
+		request.changeSessionId();
 	}
 
 	/** 회원 탈퇴 (앱스토어 심사 요건: 앱 안에서 탈퇴 가능해야 함) */

@@ -92,6 +92,8 @@ export const authApi = {
   logout: () => apiRequest<void>("/api/auth/logout", { method: "POST" }),
   withdraw: (password: string) =>
     apiRequest<void>("/api/me/withdraw", { method: "POST", body: JSON.stringify({ password }) }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    apiRequest<void>("/api/me/password", { method: "POST", body: JSON.stringify({ currentPassword, newPassword }) }),
 };
 
 // ----------------------------------------------------------------------
@@ -107,13 +109,23 @@ export type CartItem = {
   thumbnailUrl: string | null;
   price: number;
   listPrice: number | null;
+  /** 도매 수량 할인으로 단가에서 빠지는 금액 */
+  unitDiscount: number;
   qty: number;
   available: number;
   purchasable: boolean;
   lineTotal: number;
+  /** 최소구매수량에 못 미치면 안내 문구 */
+  minimumNotice: string | null;
 };
 
-export type CartView = { items: CartItem[]; itemsTotal: number; shippingFee: number; payAmount: number };
+export type CartView = {
+  items: CartItem[];
+  itemsTotal: number;
+  discountTotal: number;
+  shippingFee: number;
+  payAmount: number;
+};
 
 export type OrderLine = { skuId: number; qty: number };
 
@@ -125,15 +137,19 @@ export type Preview = {
     conditionGrade: string;
     thumbnailUrl: string | null;
     price: number;
+    unitDiscount: number;
     qty: number;
     available: number;
     purchasable: boolean;
     lineTotal: number;
   }[];
   itemsTotal: number;
+  discountTotal: number;
   shippingFee: number;
   payAmount: number;
   allPurchasable: boolean;
+  /** 최소구매수량 미달 등 주문 전에 고쳐야 할 안내 */
+  notices: string[];
 };
 
 export type CheckoutInfo = {
@@ -182,6 +198,8 @@ export type OrderDetail = {
     unitPrice: number;
     lineTotal: number;
     status: string;
+    /** 구매후기를 이미 썼는지 */
+    reviewed: boolean;
   }[];
   itemsTotal: number;
   shippingFee: number;
@@ -195,7 +213,14 @@ export type OrderDetail = {
     status: string;
     approvedAt: string | null;
   } | null;
-  shipments: { id: number; carrierName: string; trackingNo: string; status: string; shippedAt: string | null }[];
+  shipments: {
+    id: number;
+    carrierName: string;
+    trackingNo: string;
+    trackingUrl: string | null;
+    status: string;
+    shippedAt: string | null;
+  }[];
   cancellable: boolean;
   claims: Claim[];
 };
@@ -285,6 +310,69 @@ export const orderApi = {
   detail: (orderNo: string) => apiRequest<OrderDetail>(`/api/orders/${orderNo}`),
   cancel: (orderNo: string, reason: string) =>
     apiRequest<OrderDetail>(`/api/orders/${orderNo}/cancel`, { method: "POST", body: JSON.stringify({ reason }) }),
+  confirmPurchase: (orderNo: string, itemId: number) =>
+    apiRequest<OrderDetail>(`/api/orders/${orderNo}/items/${itemId}/confirm`, { method: "POST" }),
+};
+
+// ----------------------------------------------------------------------
+// 구매후기·상품문의·찜
+// ----------------------------------------------------------------------
+
+export type Review = {
+  id: number;
+  rating: number;
+  content: string;
+  author: string;
+  optionText: string | null;
+  grade: string | null;
+  createdAt: string;
+};
+
+export type ProductReviews = {
+  summary: { average: number; count: number; counts: number[] };
+  page: Page<Review>;
+};
+
+export type Question = {
+  id: number;
+  author: string;
+  question: string | null;
+  secret: boolean;
+  mine: boolean;
+  answer: string | null;
+  answeredAt: string | null;
+  createdAt: string;
+};
+
+export type WishItem = {
+  productId: number;
+  name: string;
+  thumbnailUrl: string | null;
+  minPrice: number | null;
+  availableQty: number;
+  status: string;
+  createdAt: string;
+};
+
+export const communityApi = {
+  reviews: (productId: number, page = 0) =>
+    apiRequest<ProductReviews>(`/api/products/${productId}/reviews?page=${page}`),
+  writeReview: (orderNo: string, itemId: number, rating: number, content: string) =>
+    apiRequest<void>(`/api/orders/${orderNo}/items/${itemId}/review`, {
+      method: "POST",
+      body: JSON.stringify({ rating, content }),
+    }),
+  questions: (productId: number, page = 0) =>
+    apiRequest<Page<Question>>(`/api/products/${productId}/questions?page=${page}`),
+  ask: (productId: number, question: string, secret: boolean) =>
+    apiRequest<void>(`/api/products/${productId}/questions`, {
+      method: "POST",
+      body: JSON.stringify({ question, secret }),
+    }),
+  wishlist: () => apiRequest<WishItem[]>("/api/me/wishlist"),
+  isWished: (productId: number) => apiRequest<{ wished: boolean }>(`/api/me/wishlist/${productId}`),
+  wish: (productId: number) => apiRequest<void>(`/api/me/wishlist/${productId}`, { method: "PUT" }),
+  unwish: (productId: number) => apiRequest<void>(`/api/me/wishlist/${productId}`, { method: "DELETE" }),
 };
 
 /** 주문 상품 상태 이름 */
@@ -331,3 +419,24 @@ export function gradeLabel(code: string | null | undefined) {
   if (!code) return null;
   return GRADE_LABEL[code] ?? code;
 }
+
+// ----------------------------------------------------------------------
+// 사업자 회원 인증
+// ----------------------------------------------------------------------
+
+export type BusinessProfile = {
+  status: "NONE" | "PENDING" | "APPROVED" | "REJECTED";
+  businessNo: string | null;
+  businessName: string | null;
+  ceoName: string | null;
+  businessItem: string | null;
+  rejectReason: string | null;
+  createdAt: string | null;
+  reviewedAt: string | null;
+};
+
+export const businessApi = {
+  profile: () => apiRequest<BusinessProfile>("/api/me/business"),
+  apply: (body: { businessNo: string; businessName: string; ceoName: string; businessItem: string | null }) =>
+    apiRequest<BusinessProfile>("/api/me/business", { method: "POST", body: JSON.stringify(body) }),
+};

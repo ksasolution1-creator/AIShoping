@@ -2,9 +2,9 @@
 
 /* 판매관리: 빠르게 훑고 처리하는 화면. 밀도 높은 표, 상태는 색 칩으로 구분 */
 @theme {
-  --color-ink: #0f2350;
-  --color-ink-soft: #4b5059;
-  --color-ink-faint: #8a8f98;
+  --color-ink: #111111;
+  --color-ink-soft: #444444;
+  --color-ink-faint: #767676;
   --color-line: #dde4f0;
   --color-surface: #ffffff;
   --color-canvas: #f4f7fc;
@@ -16,7 +16,7 @@
   --color-danger: #c62a24;
   --color-info: #2459c7;
 
-  --font-sans: var(--font-plex-kr), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-sans: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif;
 
   --animate-swim: swim 1.6s ease-in-out infinite;
   --animate-spout: spout 1.2s ease-out infinite;

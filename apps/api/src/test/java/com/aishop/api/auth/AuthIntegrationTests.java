@@ -154,7 +154,46 @@ class AuthIntegrationTests {
 		signup(email);
 	}
 
+	@Test
+	void changePasswordRequiresCurrentPasswordAndReplacesIt() throws Exception {
+		String email = uniqueEmail();
+		Cookie session = signup(email);
+
+		changePassword(session, "wrong1234", "newpass5678").andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("INVALID_CURRENT_PASSWORD"));
+		changePassword(session, PASSWORD, PASSWORD).andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("SAME_PASSWORD"));
+		changePassword(session, PASSWORD, "short").andExpect(status().isBadRequest());
+
+		MvcResult changed = changePassword(session, PASSWORD, "newpass5678").andExpect(status().isNoContent())
+			.andReturn();
+		// 세션 ID가 바뀌어도 로그인은 그대로 유지된다
+		Cookie renewed = sessionOf(changed);
+		mvc.perform(get("/api/auth/me").cookie(renewed)).andExpect(status().isOk());
+
+		login(email, PASSWORD).andExpect(status().isUnauthorized());
+		login(email, "newpass5678").andExpect(status().isOk());
+	}
+
+	@Test
+	void staffPasswordMustBeLonger() throws Exception {
+		String email = uniqueEmail();
+		authService.createStaff(email, "staffpass1234", "운영자", Set.of("OPERATOR"), 1L);
+		Cookie session = sessionOf(login(email, "staffpass1234").andExpect(status().isOk()).andReturn());
+
+		changePassword(session, "staffpass1234", "short123").andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("WEAK_PASSWORD"));
+		changePassword(session, "staffpass1234", "longerpass5678").andExpect(status().isNoContent());
+	}
+
 	// ------------------------------------------------------------------
+
+	private org.springframework.test.web.servlet.ResultActions changePassword(Cookie session, String current,
+			String next) throws Exception {
+		return mvc.perform(post("/api/me/password").with(csrf()).cookie(session)
+			.contentType(MediaType.APPLICATION_JSON)
+			.content("{\"currentPassword\":\"%s\",\"newPassword\":\"%s\"}".formatted(current, next)));
+	}
 
 	private Cookie signup(String email) throws Exception {
 		MvcResult result = mvc.perform(post("/api/auth/signup").with(csrf())

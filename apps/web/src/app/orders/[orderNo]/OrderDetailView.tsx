@@ -9,6 +9,7 @@ import { ProductImage } from "@/components/ProductImage";
 import {
   claimApi,
   CLAIM_STATUS_LABEL,
+  communityApi,
   gradeLabel,
   ClientApiError,
   ITEM_STATUS_LABEL,
@@ -22,7 +23,9 @@ import { formatWon } from "@/lib/format";
 
 type Item = OrderDetail["items"][number];
 
-const RETURNABLE = new Set(["SHIPPED", "DELIVERED", "CONFIRMED"]);
+// 구매확정 전까지만 온라인 반품 신청을 받는다
+const RETURNABLE = new Set(["SHIPPED", "DELIVERED"]);
+const CONFIRMABLE = new Set(["SHIPPED", "DELIVERED"]);
 const OPEN_CLAIM = new Set(["REQUESTED", "APPROVED", "COLLECTING", "INSPECTING"]);
 
 export function OrderDetailView({ orderNo }: { orderNo: string }) {
@@ -75,7 +78,7 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
         <Link href="/orders" className="text-sm text-ink-faint hover:text-ink-soft">
           ← 주문 내역
         </Link>
-        <h1 className="font-display text-2xl text-navy">주문 상세</h1>
+        <h1 className="text-2xl font-bold text-navy">주문 상세</h1>
         <p className="text-sm text-ink-faint">
           {new Date(order.orderedAt).toLocaleString("ko-KR")} · <span className="font-mono">{order.orderNo}</span>
         </p>
@@ -97,6 +100,8 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
             onCancel={() => run(() => claimApi.cancelItem(order.orderNo, item.id))}
             onReturn={(reason, detail) => run(() => claimApi.requestReturn(order.orderNo, item.id, reason, detail))}
             onWithdraw={(claimId) => run(() => claimApi.withdraw(claimId))}
+            onConfirm={() => run(() => orderApi.confirmPurchase(order.orderNo, item.id))}
+            onReview={(rating, content) => run(() => communityApi.writeReview(order.orderNo, item.id, rating, content))}
             singleItem={order.items.length === 1}
           />
         ))}
@@ -106,8 +111,15 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
         <section className="flex flex-col gap-2">
           <h2 className="font-bold">배송 정보</h2>
           {order.shipments.map((s) => (
-            <p key={s.id} className="rounded-xl bg-surface-muted p-3 text-sm">
-              {s.carrierName} <span className="font-mono">{s.trackingNo}</span>
+            <p key={s.id} className="flex items-center justify-between gap-3 rounded-xl bg-surface-muted p-3 text-sm">
+              <span>
+                {s.carrierName} <span className="font-mono">{s.trackingNo}</span>
+              </span>
+              {s.trackingUrl && (
+                <a href={s.trackingUrl} target="_blank" rel="noreferrer" className="shrink-0 font-semibold text-brand underline">
+                  배송 조회
+                </a>
+              )}
             </p>
           ))}
         </section>
@@ -129,6 +141,12 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
           <span className="text-ink-soft">상품 금액</span>
           <span className="tabular-nums">{formatWon(order.itemsTotal)}</span>
         </div>
+        {order.discountTotal > 0 && (
+          <div className="flex justify-between text-brand">
+            <span>수량 할인</span>
+            <span className="tabular-nums">−{formatWon(order.discountTotal)}</span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="text-ink-soft">배송비</span>
           <span className="tabular-nums">{order.shippingFee === 0 ? "무료" : formatWon(order.shippingFee)}</span>
@@ -186,6 +204,8 @@ function ItemRow({
   onCancel,
   onReturn,
   onWithdraw,
+  onConfirm,
+  onReview,
 }: {
   item: Item;
   claims: Claim[];
@@ -194,12 +214,16 @@ function ItemRow({
   onCancel: () => Promise<boolean>;
   onReturn: (reason: string, detail: string) => Promise<boolean>;
   onWithdraw: (claimId: number) => Promise<boolean>;
+  onConfirm: () => Promise<boolean>;
+  onReview: (rating: number, content: string) => Promise<boolean>;
 }) {
-  const [mode, setMode] = useState<"none" | "cancel" | "return">("none");
+  const [mode, setMode] = useState<"none" | "cancel" | "return" | "confirm" | "review">("none");
   const [reason, setReason] = useState<string>("");
   const hasOpenClaim = claims.some((c) => OPEN_CLAIM.has(c.status));
   const canCancel = item.status === "PAID" && !hasOpenClaim;
   const canReturn = RETURNABLE.has(item.status) && !hasOpenClaim;
+  const canConfirm = CONFIRMABLE.has(item.status) && !hasOpenClaim;
+  const canReview = item.status === "CONFIRMED" && !item.reviewed;
   const reasonInfo = RETURN_REASONS.find((r) => r.code === reason);
 
   return (
@@ -244,8 +268,26 @@ function ItemRow({
         </div>
       ))}
 
-      {mode === "none" && (canCancel || canReturn) && (
-        <div className="flex gap-2">
+      {mode === "none" && (canCancel || canReturn || canConfirm || canReview) && (
+        <div className="flex flex-wrap gap-2">
+          {canConfirm && (
+            <button
+              type="button"
+              onClick={() => setMode("confirm")}
+              className="h-9 rounded-lg bg-brand px-3 text-sm font-semibold text-white"
+            >
+              구매확정
+            </button>
+          )}
+          {canReview && (
+            <button
+              type="button"
+              onClick={() => setMode("review")}
+              className="h-9 rounded-lg bg-brand px-3 text-sm font-semibold text-white"
+            >
+              후기 쓰기
+            </button>
+          )}
           {canCancel && !singleItem && (
             <button type="button" onClick={() => setMode("cancel")} className="h-9 rounded-lg border border-line px-3 text-sm">
               이 상품 취소
@@ -262,6 +304,37 @@ function ItemRow({
             </button>
           )}
         </div>
+      )}
+
+      {mode === "confirm" && (
+        <div className="flex flex-col gap-2 rounded-xl border border-brand/30 p-3 text-sm">
+          <p>상품을 잘 받으셨나요? 구매확정하면 온라인 반품 신청은 할 수 없고, 후기를 쓸 수 있습니다.</p>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setMode("none")} className="h-9 flex-1 rounded-lg border border-line">
+              나중에
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                if (await onConfirm()) setMode("none");
+              }}
+              className="h-9 flex-1 rounded-lg bg-brand font-semibold text-white disabled:opacity-50"
+            >
+              구매확정
+            </button>
+          </div>
+        </div>
+      )}
+
+      {mode === "review" && (
+        <ReviewForm
+          busy={busy}
+          onCancel={() => setMode("none")}
+          onSubmit={async (rating, content) => {
+            if (await onReview(rating, content)) setMode("none");
+          }}
+        />
       )}
 
       {mode === "cancel" && (
@@ -338,5 +411,64 @@ function ItemRow({
         </form>
       )}
     </div>
+  );
+}
+
+function ReviewForm({
+  busy,
+  onCancel,
+  onSubmit,
+}: {
+  busy: boolean;
+  onCancel: () => void;
+  onSubmit: (rating: number, content: string) => Promise<void>;
+}) {
+  const [rating, setRating] = useState(0);
+  const [content, setContent] = useState("");
+
+  return (
+    <form
+      className="flex flex-col gap-2 rounded-xl border border-line p-3 text-sm"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void onSubmit(rating, content.trim());
+      }}
+    >
+      <fieldset className="flex items-center gap-1">
+        <legend className="sr-only">별점</legend>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <label key={n} className="cursor-pointer text-2xl leading-none" title={`${n}점`}>
+            <input type="radio" name="rating" value={n} className="sr-only" onChange={() => setRating(n)} />
+            <span aria-hidden className={n <= rating ? "text-tag" : "text-line"}>
+              ★
+            </span>
+            <span className="sr-only">{n}점</span>
+          </label>
+        ))}
+        <span className="ml-2 text-xs text-ink-faint">{rating > 0 ? `${rating}점` : "별점을 골라 주세요"}</span>
+      </fieldset>
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        rows={3}
+        minLength={10}
+        maxLength={1000}
+        required
+        placeholder="상품 상태, 포장, 배송은 어땠나요? (10자 이상)"
+        className="rounded-lg border border-line p-2"
+      />
+      <div className="flex gap-2">
+        <button type="button" onClick={onCancel} className="h-9 flex-1 rounded-lg border border-line">
+          닫기
+        </button>
+        <button
+          type="submit"
+          disabled={busy || rating === 0 || content.trim().length < 10}
+          className="h-9 flex-1 rounded-lg bg-brand font-semibold text-white disabled:opacity-50"
+        >
+          후기 올리기
+        </button>
+      </div>
+    </form>
   );
 }

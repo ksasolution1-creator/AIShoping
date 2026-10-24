@@ -54,6 +54,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	implementation 'org.flywaydb:flyway-database-postgresql'
 	implementation 'org.jooq:jooq-postgres-extensions'
+	// 송장 엑셀 내려받기·올리기
+	implementation 'org.apache.poi:poi-ooxml:5.4.1'
 	runtimeOnly 'org.postgresql:postgresql'
 
 	jooqCodegen 'org.postgresql:postgresql:42.7.14'

@@ -125,6 +125,10 @@ public class UserRepository {
 		dsl.update(USERS).set(USERS.LAST_LOGIN_AT, currentOffsetDateTime()).where(USERS.ID.eq(userId)).execute();
 	}
 
+	public void updatePasswordHash(long userId, String passwordHash) {
+		dsl.update(USERS).set(USERS.PASSWORD_HASH, passwordHash).where(USERS.ID.eq(userId)).execute();
+	}
+
 	/**
 	 * 탈퇴: 개인정보를 지우고 상태만 남긴다.
 	 * 주문 기록은 전자상거래법에 따라 5년 보관해야 하므로 orders의 주문 시점 정보는 지우지 않는다.

@@ -60,8 +60,9 @@ public class OrderController {
 	}
 
 	@PostMapping("/api/checkout/preview")
-	public OrderService.Preview preview(@Valid @RequestBody PreviewRequest body) {
-		return orderService.preview(body.items());
+	public OrderService.Preview preview(@AuthenticationPrincipal AuthUser user,
+			@Valid @RequestBody PreviewRequest body) {
+		return orderService.preview(user == null ? null : user.id(), body.items());
 	}
 
 	@PostMapping("/api/orders")
@@ -99,6 +100,12 @@ public class OrderController {
 	@GetMapping("/api/orders/{orderNo}")
 	public OrderDetail myOrder(@AuthenticationPrincipal AuthUser user, @PathVariable String orderNo) {
 		return orderService.myOrder(user.id(), orderNo);
+	}
+
+	@PostMapping("/api/orders/{orderNo}/items/{itemId}/confirm")
+	public OrderDetail confirmPurchase(@AuthenticationPrincipal AuthUser user, @PathVariable String orderNo,
+			@PathVariable long itemId) {
+		return orderService.confirmPurchase(user.id(), orderNo, itemId);
 	}
 
 	@PostMapping("/api/orders/{orderNo}/cancel")

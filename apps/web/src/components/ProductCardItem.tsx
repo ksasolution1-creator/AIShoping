@@ -25,6 +25,11 @@ export function ProductCardItem({ product }: { product: ProductCard }) {
             땡처리
           </span>
         )}
+        {product.businessOnly && (
+          <span className="absolute right-2 bottom-2 rounded bg-navy px-1.5 py-0.5 text-[11px] font-bold text-white">
+            사업자 전용
+          </span>
+        )}
         {soldOut && (
           <div className="absolute inset-0 flex items-center justify-center bg-navy/55 font-display text-lg text-white">
             품절

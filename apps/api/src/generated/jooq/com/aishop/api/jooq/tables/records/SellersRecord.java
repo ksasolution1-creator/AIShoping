@@ -230,6 +230,96 @@ public class SellersRecord extends UpdatableRecordImpl<SellersRecord> {
         return (OffsetDateTime) get(13);
     }
 
+    /**
+     * Setter for <code>public.sellers.sender_name</code>.
+     */
+    public SellersRecord setSenderName(String value) {
+        set(14, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.sellers.sender_name</code>.
+     */
+    public String getSenderName() {
+        return (String) get(14);
+    }
+
+    /**
+     * Setter for <code>public.sellers.sender_phone</code>.
+     */
+    public SellersRecord setSenderPhone(String value) {
+        set(15, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.sellers.sender_phone</code>.
+     */
+    public String getSenderPhone() {
+        return (String) get(15);
+    }
+
+    /**
+     * Setter for <code>public.sellers.ship_from_zipcode</code>.
+     */
+    public SellersRecord setShipFromZipcode(String value) {
+        set(16, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.sellers.ship_from_zipcode</code>.
+     */
+    public String getShipFromZipcode() {
+        return (String) get(16);
+    }
+
+    /**
+     * Setter for <code>public.sellers.ship_from_address</code>.
+     */
+    public SellersRecord setShipFromAddress(String value) {
+        set(17, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.sellers.ship_from_address</code>.
+     */
+    public String getShipFromAddress() {
+        return (String) get(17);
+    }
+
+    /**
+     * Setter for <code>public.sellers.return_zipcode</code>.
+     */
+    public SellersRecord setReturnZipcode(String value) {
+        set(18, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.sellers.return_zipcode</code>.
+     */
+    public String getReturnZipcode() {
+        return (String) get(18);
+    }
+
+    /**
+     * Setter for <code>public.sellers.return_address</code>.
+     */
+    public SellersRecord setReturnAddress(String value) {
+        set(19, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.sellers.return_address</code>.
+     */
+    public String getReturnAddress() {
+        return (String) get(19);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -253,7 +343,7 @@ public class SellersRecord extends UpdatableRecordImpl<SellersRecord> {
     /**
      * Create a detached, initialised SellersRecord
      */
-    public SellersRecord(Long id, String businessName, String businessNo, String ceoName, String mailOrderNo, String contactPhone, String contactEmail, Integer commissionRateBp, String payoutBankCode, String payoutAccountEnc, String payoutHolder, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
+    public SellersRecord(Long id, String businessName, String businessNo, String ceoName, String mailOrderNo, String contactPhone, String contactEmail, Integer commissionRateBp, String payoutBankCode, String payoutAccountEnc, String payoutHolder, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt, String senderName, String senderPhone, String shipFromZipcode, String shipFromAddress, String returnZipcode, String returnAddress) {
         super(Sellers.SELLERS);
 
         setId(id);
@@ -270,6 +360,12 @@ public class SellersRecord extends UpdatableRecordImpl<SellersRecord> {
         setStatus(status);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
+        setSenderName(senderName);
+        setSenderPhone(senderPhone);
+        setShipFromZipcode(shipFromZipcode);
+        setShipFromAddress(shipFromAddress);
+        setReturnZipcode(returnZipcode);
+        setReturnAddress(returnAddress);
         resetTouchedOnNotNull();
     }
 }

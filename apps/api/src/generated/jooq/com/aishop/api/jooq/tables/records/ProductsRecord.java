@@ -231,6 +231,126 @@ public class ProductsRecord extends UpdatableRecordImpl<ProductsRecord> {
         return (OffsetDateTime) get(13);
     }
 
+    /**
+     * Setter for <code>public.products.min_order_qty</code>.
+     */
+    public ProductsRecord setMinOrderQty(Integer value) {
+        set(14, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.products.min_order_qty</code>.
+     */
+    public Integer getMinOrderQty() {
+        return (Integer) get(14);
+    }
+
+    /**
+     * Setter for <code>public.products.ship_within_days</code>.
+     */
+    public ProductsRecord setShipWithinDays(Integer value) {
+        set(15, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.products.ship_within_days</code>.
+     */
+    public Integer getShipWithinDays() {
+        return (Integer) get(15);
+    }
+
+    /**
+     * Setter for <code>public.products.business_only</code>.
+     */
+    public ProductsRecord setBusinessOnly(Boolean value) {
+        set(16, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.products.business_only</code>.
+     */
+    public Boolean getBusinessOnly() {
+        return (Boolean) get(16);
+    }
+
+    /**
+     * Setter for <code>public.products.image_reuse_allowed</code>.
+     */
+    public ProductsRecord setImageReuseAllowed(Boolean value) {
+        set(17, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.products.image_reuse_allowed</code>.
+     */
+    public Boolean getImageReuseAllowed() {
+        return (Boolean) get(17);
+    }
+
+    /**
+     * Setter for <code>public.products.origin</code>.
+     */
+    public ProductsRecord setOrigin(String value) {
+        set(18, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.products.origin</code>.
+     */
+    public String getOrigin() {
+        return (String) get(18);
+    }
+
+    /**
+     * Setter for <code>public.products.manufacturer</code>.
+     */
+    public ProductsRecord setManufacturer(String value) {
+        set(19, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.products.manufacturer</code>.
+     */
+    public String getManufacturer() {
+        return (String) get(19);
+    }
+
+    /**
+     * Setter for <code>public.products.package_size</code>.
+     */
+    public ProductsRecord setPackageSize(String value) {
+        set(20, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.products.package_size</code>.
+     */
+    public String getPackageSize() {
+        return (String) get(20);
+    }
+
+    /**
+     * Setter for <code>public.products.package_weight_g</code>.
+     */
+    public ProductsRecord setPackageWeightG(Integer value) {
+        set(21, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.products.package_weight_g</code>.
+     */
+    public Integer getPackageWeightG() {
+        return (Integer) get(21);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -254,7 +374,7 @@ public class ProductsRecord extends UpdatableRecordImpl<ProductsRecord> {
     /**
      * Create a detached, initialised ProductsRecord
      */
-    public ProductsRecord(Long id, Long sellerId, Long categoryId, String name, String brand, String modelName, String description, JSONB noticeInfo, String kcCertNo, Long shippingFee, Long freeShippingThreshold, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
+    public ProductsRecord(Long id, Long sellerId, Long categoryId, String name, String brand, String modelName, String description, JSONB noticeInfo, String kcCertNo, Long shippingFee, Long freeShippingThreshold, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt, Integer minOrderQty, Integer shipWithinDays, Boolean businessOnly, Boolean imageReuseAllowed, String origin, String manufacturer, String packageSize, Integer packageWeightG) {
         super(Products.PRODUCTS);
 
         setId(id);
@@ -271,6 +391,14 @@ public class ProductsRecord extends UpdatableRecordImpl<ProductsRecord> {
         setStatus(status);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
+        setMinOrderQty(minOrderQty);
+        setShipWithinDays(shipWithinDays);
+        setBusinessOnly(businessOnly);
+        setImageReuseAllowed(imageReuseAllowed);
+        setOrigin(origin);
+        setManufacturer(manufacturer);
+        setPackageSize(packageSize);
+        setPackageWeightG(packageWeightG);
         resetTouchedOnNotNull();
     }
 }

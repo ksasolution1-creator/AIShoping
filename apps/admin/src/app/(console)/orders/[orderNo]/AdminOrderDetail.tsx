@@ -197,6 +197,12 @@ export function AdminOrderDetail({ orderNo }: { orderNo: string }) {
             <span className="text-ink-soft">상품 금액</span>
             <span className="tabular-nums">{formatWon(order.itemsTotal)}</span>
           </div>
+          {order.discountTotal > 0 && (
+            <div className="flex justify-between">
+              <span className="text-ink-soft">수량 할인</span>
+              <span className="tabular-nums">−{formatWon(order.discountTotal)}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-ink-soft">배송비</span>
             <span className="tabular-nums">{formatWon(order.shippingFee)}</span>

@@ -8,16 +8,22 @@ import com.aishop.api.jooq.Keys;
 import com.aishop.api.jooq.Public;
 import com.aishop.api.jooq.tables.Addresses.AddressesPath;
 import com.aishop.api.jooq.tables.AuditLogs.AuditLogsPath;
+import com.aishop.api.jooq.tables.BusinessProfiles.BusinessProfilesPath;
 import com.aishop.api.jooq.tables.CartItems.CartItemsPath;
 import com.aishop.api.jooq.tables.Claims.ClaimsPath;
 import com.aishop.api.jooq.tables.InventoryMovements.InventoryMovementsPath;
 import com.aishop.api.jooq.tables.Orders.OrdersPath;
+import com.aishop.api.jooq.tables.ProductQuestions.ProductQuestionsPath;
+import com.aishop.api.jooq.tables.Products.ProductsPath;
+import com.aishop.api.jooq.tables.Purchases.PurchasesPath;
+import com.aishop.api.jooq.tables.Reviews.ReviewsPath;
 import com.aishop.api.jooq.tables.SellerMembers.SellerMembersPath;
 import com.aishop.api.jooq.tables.Sellers.SellersPath;
 import com.aishop.api.jooq.tables.Skus.SkusPath;
 import com.aishop.api.jooq.tables.SocialAccounts.SocialAccountsPath;
 import com.aishop.api.jooq.tables.UserAgreements.UserAgreementsPath;
 import com.aishop.api.jooq.tables.UserRoles.UserRolesPath;
+import com.aishop.api.jooq.tables.Wishlists.WishlistsPath;
 import com.aishop.api.jooq.tables.records.UsersRecord;
 
 import java.time.OffsetDateTime;
@@ -234,6 +240,34 @@ public class Users extends TableImpl<UsersRecord> {
         return _auditLogs;
     }
 
+    private transient BusinessProfilesPath _businessProfilesReviewedByFkey;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.business_profiles</code> table, via the
+     * <code>business_profiles_reviewed_by_fkey</code> key
+     */
+    public BusinessProfilesPath businessProfilesReviewedByFkey() {
+        if (_businessProfilesReviewedByFkey == null)
+            _businessProfilesReviewedByFkey = new BusinessProfilesPath(this, null, Keys.BUSINESS_PROFILES__BUSINESS_PROFILES_REVIEWED_BY_FKEY.getInverseKey());
+
+        return _businessProfilesReviewedByFkey;
+    }
+
+    private transient BusinessProfilesPath _businessProfilesUserIdFkey;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.business_profiles</code> table, via the
+     * <code>business_profiles_user_id_fkey</code> key
+     */
+    public BusinessProfilesPath businessProfilesUserIdFkey() {
+        if (_businessProfilesUserIdFkey == null)
+            _businessProfilesUserIdFkey = new BusinessProfilesPath(this, null, Keys.BUSINESS_PROFILES__BUSINESS_PROFILES_USER_ID_FKEY.getInverseKey());
+
+        return _businessProfilesUserIdFkey;
+    }
+
     private transient CartItemsPath _cartItems;
 
     /**
@@ -299,6 +333,73 @@ public class Users extends TableImpl<UsersRecord> {
         return _orders;
     }
 
+    private transient ProductQuestionsPath _productQuestionsAnsweredByFkey;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.product_questions</code> table, via the
+     * <code>product_questions_answered_by_fkey</code> key
+     */
+    public ProductQuestionsPath productQuestionsAnsweredByFkey() {
+        if (_productQuestionsAnsweredByFkey == null)
+            _productQuestionsAnsweredByFkey = new ProductQuestionsPath(this, null, Keys.PRODUCT_QUESTIONS__PRODUCT_QUESTIONS_ANSWERED_BY_FKEY.getInverseKey());
+
+        return _productQuestionsAnsweredByFkey;
+    }
+
+    private transient ProductQuestionsPath _productQuestionsUserIdFkey;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.product_questions</code> table, via the
+     * <code>product_questions_user_id_fkey</code> key
+     */
+    public ProductQuestionsPath productQuestionsUserIdFkey() {
+        if (_productQuestionsUserIdFkey == null)
+            _productQuestionsUserIdFkey = new ProductQuestionsPath(this, null, Keys.PRODUCT_QUESTIONS__PRODUCT_QUESTIONS_USER_ID_FKEY.getInverseKey());
+
+        return _productQuestionsUserIdFkey;
+    }
+
+    private transient PurchasesPath _purchasesCreatedByFkey;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.purchases</code>
+     * table, via the <code>purchases_created_by_fkey</code> key
+     */
+    public PurchasesPath purchasesCreatedByFkey() {
+        if (_purchasesCreatedByFkey == null)
+            _purchasesCreatedByFkey = new PurchasesPath(this, null, Keys.PURCHASES__PURCHASES_CREATED_BY_FKEY.getInverseKey());
+
+        return _purchasesCreatedByFkey;
+    }
+
+    private transient PurchasesPath _purchasesReceivedByFkey;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.purchases</code>
+     * table, via the <code>purchases_received_by_fkey</code> key
+     */
+    public PurchasesPath purchasesReceivedByFkey() {
+        if (_purchasesReceivedByFkey == null)
+            _purchasesReceivedByFkey = new PurchasesPath(this, null, Keys.PURCHASES__PURCHASES_RECEIVED_BY_FKEY.getInverseKey());
+
+        return _purchasesReceivedByFkey;
+    }
+
+    private transient ReviewsPath _reviews;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.reviews</code>
+     * table
+     */
+    public ReviewsPath reviews() {
+        if (_reviews == null)
+            _reviews = new ReviewsPath(this, null, Keys.REVIEWS__REVIEWS_USER_ID_FKEY.getInverseKey());
+
+        return _reviews;
+    }
+
     private transient SellerMembersPath _sellerMembers;
 
     /**
@@ -351,6 +452,19 @@ public class Users extends TableImpl<UsersRecord> {
         return _userRoles;
     }
 
+    private transient WishlistsPath _wishlists;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.wishlists</code>
+     * table
+     */
+    public WishlistsPath wishlists() {
+        if (_wishlists == null)
+            _wishlists = new WishlistsPath(this, null, Keys.WISHLISTS__WISHLISTS_USER_ID_FKEY.getInverseKey());
+
+        return _wishlists;
+    }
+
     /**
      * Get the implicit many-to-many join path to the <code>public.skus</code>
      * table
@@ -365,6 +479,14 @@ public class Users extends TableImpl<UsersRecord> {
      */
     public SellersPath sellers() {
         return sellerMembers().sellers();
+    }
+
+    /**
+     * Get the implicit many-to-many join path to the
+     * <code>public.products</code> table
+     */
+    public ProductsPath products() {
+        return wishlists().products();
     }
 
     @Override

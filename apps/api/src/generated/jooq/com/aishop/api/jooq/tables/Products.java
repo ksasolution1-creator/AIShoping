@@ -9,8 +9,13 @@ import com.aishop.api.jooq.Keys;
 import com.aishop.api.jooq.Public;
 import com.aishop.api.jooq.tables.Categories.CategoriesPath;
 import com.aishop.api.jooq.tables.ProductImages.ProductImagesPath;
+import com.aishop.api.jooq.tables.ProductPriceTiers.ProductPriceTiersPath;
+import com.aishop.api.jooq.tables.ProductQuestions.ProductQuestionsPath;
+import com.aishop.api.jooq.tables.Reviews.ReviewsPath;
 import com.aishop.api.jooq.tables.Sellers.SellersPath;
 import com.aishop.api.jooq.tables.Skus.SkusPath;
+import com.aishop.api.jooq.tables.Users.UsersPath;
+import com.aishop.api.jooq.tables.Wishlists.WishlistsPath;
 import com.aishop.api.jooq.tables.records.ProductsRecord;
 
 import java.time.OffsetDateTime;
@@ -136,6 +141,46 @@ public class Products extends TableImpl<ProductsRecord> {
      */
     public final TableField<ProductsRecord, OffsetDateTime> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6).nullable(false).defaultValue(DSL.field(DSL.raw("now()"), SQLDataType.TIMESTAMPWITHTIMEZONE)), this, "");
 
+    /**
+     * The column <code>public.products.min_order_qty</code>.
+     */
+    public final TableField<ProductsRecord, Integer> MIN_ORDER_QTY = createField(DSL.name("min_order_qty"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.INTEGER)), this, "");
+
+    /**
+     * The column <code>public.products.ship_within_days</code>.
+     */
+    public final TableField<ProductsRecord, Integer> SHIP_WITHIN_DAYS = createField(DSL.name("ship_within_days"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("3"), SQLDataType.INTEGER)), this, "");
+
+    /**
+     * The column <code>public.products.business_only</code>.
+     */
+    public final TableField<ProductsRecord, Boolean> BUSINESS_ONLY = createField(DSL.name("business_only"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "");
+
+    /**
+     * The column <code>public.products.image_reuse_allowed</code>.
+     */
+    public final TableField<ProductsRecord, Boolean> IMAGE_REUSE_ALLOWED = createField(DSL.name("image_reuse_allowed"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "");
+
+    /**
+     * The column <code>public.products.origin</code>.
+     */
+    public final TableField<ProductsRecord, String> ORIGIN = createField(DSL.name("origin"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.products.manufacturer</code>.
+     */
+    public final TableField<ProductsRecord, String> MANUFACTURER = createField(DSL.name("manufacturer"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.products.package_size</code>.
+     */
+    public final TableField<ProductsRecord, String> PACKAGE_SIZE = createField(DSL.name("package_size"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.products.package_weight_g</code>.
+     */
+    public final TableField<ProductsRecord, Integer> PACKAGE_WEIGHT_G = createField(DSL.name("package_weight_g"), SQLDataType.INTEGER, this, "");
+
     private Products(Name alias, Table<ProductsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -260,6 +305,45 @@ public class Products extends TableImpl<ProductsRecord> {
         return _productImages;
     }
 
+    private transient ProductPriceTiersPath _productPriceTiers;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.product_price_tiers</code> table
+     */
+    public ProductPriceTiersPath productPriceTiers() {
+        if (_productPriceTiers == null)
+            _productPriceTiers = new ProductPriceTiersPath(this, null, Keys.PRODUCT_PRICE_TIERS__PRODUCT_PRICE_TIERS_PRODUCT_ID_FKEY.getInverseKey());
+
+        return _productPriceTiers;
+    }
+
+    private transient ProductQuestionsPath _productQuestions;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.product_questions</code> table
+     */
+    public ProductQuestionsPath productQuestions() {
+        if (_productQuestions == null)
+            _productQuestions = new ProductQuestionsPath(this, null, Keys.PRODUCT_QUESTIONS__PRODUCT_QUESTIONS_PRODUCT_ID_FKEY.getInverseKey());
+
+        return _productQuestions;
+    }
+
+    private transient ReviewsPath _reviews;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.reviews</code>
+     * table
+     */
+    public ReviewsPath reviews() {
+        if (_reviews == null)
+            _reviews = new ReviewsPath(this, null, Keys.REVIEWS__REVIEWS_PRODUCT_ID_FKEY.getInverseKey());
+
+        return _reviews;
+    }
+
     private transient SkusPath _skus;
 
     /**
@@ -272,10 +356,34 @@ public class Products extends TableImpl<ProductsRecord> {
         return _skus;
     }
 
+    private transient WishlistsPath _wishlists;
+
+    /**
+     * Get the implicit to-many join path to the <code>public.wishlists</code>
+     * table
+     */
+    public WishlistsPath wishlists() {
+        if (_wishlists == null)
+            _wishlists = new WishlistsPath(this, null, Keys.WISHLISTS__WISHLISTS_PRODUCT_ID_FKEY.getInverseKey());
+
+        return _wishlists;
+    }
+
+    /**
+     * Get the implicit many-to-many join path to the <code>public.users</code>
+     * table
+     */
+    public UsersPath users() {
+        return wishlists().users();
+    }
+
     @Override
     public List<Check<ProductsRecord>> getChecks() {
         return Arrays.asList(
             Internal.createCheck(this, DSL.name("products_free_shipping_threshold_check"), "((free_shipping_threshold >= 0))", true),
+            Internal.createCheck(this, DSL.name("products_min_order_qty_check"), "(((min_order_qty >= 1) AND (min_order_qty <= 10000)))", true),
+            Internal.createCheck(this, DSL.name("products_package_weight_g_check"), "((package_weight_g >= 0))", true),
+            Internal.createCheck(this, DSL.name("products_ship_within_days_check"), "(((ship_within_days >= 0) AND (ship_within_days <= 30)))", true),
             Internal.createCheck(this, DSL.name("products_shipping_fee_check"), "((shipping_fee >= 0))", true),
             Internal.createCheck(this, DSL.name("products_status_check"), "((status = ANY (ARRAY['DRAFT'::text, 'ON_SALE'::text, 'SOLD_OUT'::text, 'HIDDEN'::text, 'DELETED'::text])))", true)
         );

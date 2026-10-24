@@ -8,8 +8,10 @@ const MENU = [
   { href: "/claims", label: "취소·반품", ready: true },
   { href: "/products", label: "상품 관리", ready: true },
   { href: "/categories", label: "카테고리", ready: true },
-  { href: "#inventory", label: "재고·매입", ready: false },
-  { href: "#shipping", label: "배송·송장", ready: false },
+  { href: "/community", label: "문의·후기", ready: true },
+  { href: "/business-members", label: "사업자 회원", ready: true },
+  { href: "/inventory", label: "재고·매입", ready: true, also: ["/purchases", "/suppliers"] },
+  { href: "/shipping", label: "배송·송장", ready: true },
 ];
 
 export function ActiveNavLinks() {
@@ -20,7 +22,8 @@ export function NavLinks({ pathname }: { pathname: string }) {
   return (
     <ul className="flex gap-1 md:flex-col">
       {MENU.map((item) => {
-        const active = item.ready && pathname.startsWith(item.href);
+        const prefixes = [item.href, ...(("also" in item && item.also) || [])];
+        const active = item.ready && prefixes.some((p) => pathname.startsWith(p));
         return (
           <li key={item.href}>
             {item.ready ? (

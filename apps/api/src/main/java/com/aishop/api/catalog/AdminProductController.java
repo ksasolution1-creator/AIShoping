@@ -73,6 +73,16 @@ public class AdminProductController {
 		return productService.getAdminProduct(admin.sellerId(), id);
 	}
 
+	@PutMapping("/products/{id}/spec")
+	public AdminProductDetail updateSpec(@PathVariable long id, @Valid @RequestBody ProductSpec request) {
+		return productService.updateSpec(admin.sellerId(), id, request);
+	}
+
+	@PutMapping("/products/{id}/wholesale")
+	public AdminProductDetail updateWholesale(@PathVariable long id, @Valid @RequestBody WholesaleTerms request) {
+		return productService.updateWholesale(admin.sellerId(), id, request);
+	}
+
 	@PatchMapping("/products/{id}/status")
 	public AdminProductDetail changeStatus(@PathVariable long id, @Valid @RequestBody ChangeProductStatus request) {
 		productService.changeStatus(admin.sellerId(), id, request.status());

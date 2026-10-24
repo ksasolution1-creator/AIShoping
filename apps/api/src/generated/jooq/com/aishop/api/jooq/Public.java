@@ -6,6 +6,7 @@ package com.aishop.api.jooq;
 
 import com.aishop.api.jooq.tables.Addresses;
 import com.aishop.api.jooq.tables.AuditLogs;
+import com.aishop.api.jooq.tables.BusinessProfiles;
 import com.aishop.api.jooq.tables.Carriers;
 import com.aishop.api.jooq.tables.CartItems;
 import com.aishop.api.jooq.tables.Categories;
@@ -18,18 +19,26 @@ import com.aishop.api.jooq.tables.OrderItems;
 import com.aishop.api.jooq.tables.Orders;
 import com.aishop.api.jooq.tables.Payments;
 import com.aishop.api.jooq.tables.ProductImages;
+import com.aishop.api.jooq.tables.ProductPriceTiers;
+import com.aishop.api.jooq.tables.ProductQuestions;
 import com.aishop.api.jooq.tables.Products;
+import com.aishop.api.jooq.tables.PurchaseItems;
+import com.aishop.api.jooq.tables.Purchases;
 import com.aishop.api.jooq.tables.Refunds;
+import com.aishop.api.jooq.tables.Reviews;
+import com.aishop.api.jooq.tables.SearchLogs;
 import com.aishop.api.jooq.tables.SellerMembers;
 import com.aishop.api.jooq.tables.Sellers;
 import com.aishop.api.jooq.tables.ShipmentItems;
 import com.aishop.api.jooq.tables.Shipments;
 import com.aishop.api.jooq.tables.Skus;
 import com.aishop.api.jooq.tables.SocialAccounts;
+import com.aishop.api.jooq.tables.Suppliers;
 import com.aishop.api.jooq.tables.TrackingEvents;
 import com.aishop.api.jooq.tables.UserAgreements;
 import com.aishop.api.jooq.tables.UserRoles;
 import com.aishop.api.jooq.tables.Users;
+import com.aishop.api.jooq.tables.Wishlists;
 
 import java.util.Arrays;
 import java.util.List;
@@ -62,6 +71,11 @@ public class Public extends SchemaImpl {
      * The table <code>public.audit_logs</code>.
      */
     public final AuditLogs AUDIT_LOGS = AuditLogs.AUDIT_LOGS;
+
+    /**
+     * The table <code>public.business_profiles</code>.
+     */
+    public final BusinessProfiles BUSINESS_PROFILES = BusinessProfiles.BUSINESS_PROFILES;
 
     /**
      * The table <code>public.carriers</code>.
@@ -124,14 +138,44 @@ public class Public extends SchemaImpl {
     public final ProductImages PRODUCT_IMAGES = ProductImages.PRODUCT_IMAGES;
 
     /**
+     * The table <code>public.product_price_tiers</code>.
+     */
+    public final ProductPriceTiers PRODUCT_PRICE_TIERS = ProductPriceTiers.PRODUCT_PRICE_TIERS;
+
+    /**
+     * The table <code>public.product_questions</code>.
+     */
+    public final ProductQuestions PRODUCT_QUESTIONS = ProductQuestions.PRODUCT_QUESTIONS;
+
+    /**
      * The table <code>public.products</code>.
      */
     public final Products PRODUCTS = Products.PRODUCTS;
 
     /**
+     * The table <code>public.purchase_items</code>.
+     */
+    public final PurchaseItems PURCHASE_ITEMS = PurchaseItems.PURCHASE_ITEMS;
+
+    /**
+     * The table <code>public.purchases</code>.
+     */
+    public final Purchases PURCHASES = Purchases.PURCHASES;
+
+    /**
      * The table <code>public.refunds</code>.
      */
     public final Refunds REFUNDS = Refunds.REFUNDS;
+
+    /**
+     * The table <code>public.reviews</code>.
+     */
+    public final Reviews REVIEWS = Reviews.REVIEWS;
+
+    /**
+     * The table <code>public.search_logs</code>.
+     */
+    public final SearchLogs SEARCH_LOGS = SearchLogs.SEARCH_LOGS;
 
     /**
      * The table <code>public.seller_members</code>.
@@ -164,6 +208,11 @@ public class Public extends SchemaImpl {
     public final SocialAccounts SOCIAL_ACCOUNTS = SocialAccounts.SOCIAL_ACCOUNTS;
 
     /**
+     * The table <code>public.suppliers</code>.
+     */
+    public final Suppliers SUPPLIERS = Suppliers.SUPPLIERS;
+
+    /**
      * The table <code>public.tracking_events</code>.
      */
     public final TrackingEvents TRACKING_EVENTS = TrackingEvents.TRACKING_EVENTS;
@@ -184,6 +233,11 @@ public class Public extends SchemaImpl {
     public final Users USERS = Users.USERS;
 
     /**
+     * The table <code>public.wishlists</code>.
+     */
+    public final Wishlists WISHLISTS = Wishlists.WISHLISTS;
+
+    /**
      * No further instances allowed
      */
     private Public() {
@@ -201,6 +255,7 @@ public class Public extends SchemaImpl {
         return Arrays.asList(
             Addresses.ADDRESSES,
             AuditLogs.AUDIT_LOGS,
+            BusinessProfiles.BUSINESS_PROFILES,
             Carriers.CARRIERS,
             CartItems.CART_ITEMS,
             Categories.CATEGORIES,
@@ -213,18 +268,26 @@ public class Public extends SchemaImpl {
             Orders.ORDERS,
             Payments.PAYMENTS,
             ProductImages.PRODUCT_IMAGES,
+            ProductPriceTiers.PRODUCT_PRICE_TIERS,
+            ProductQuestions.PRODUCT_QUESTIONS,
             Products.PRODUCTS,
+            PurchaseItems.PURCHASE_ITEMS,
+            Purchases.PURCHASES,
             Refunds.REFUNDS,
+            Reviews.REVIEWS,
+            SearchLogs.SEARCH_LOGS,
             SellerMembers.SELLER_MEMBERS,
             Sellers.SELLERS,
             ShipmentItems.SHIPMENT_ITEMS,
             Shipments.SHIPMENTS,
             Skus.SKUS,
             SocialAccounts.SOCIAL_ACCOUNTS,
+            Suppliers.SUPPLIERS,
             TrackingEvents.TRACKING_EVENTS,
             UserAgreements.USER_AGREEMENTS,
             UserRoles.USER_ROLES,
-            Users.USERS
+            Users.USERS,
+            Wishlists.WISHLISTS
         );
     }
 }

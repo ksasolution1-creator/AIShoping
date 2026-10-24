@@ -16,6 +16,9 @@ import com.aishop.api.jooq.tables.records.UsersRecord;
 @Service
 public class AuthService {
 
+	/** 운영자는 고객보다 길게 받는다 (최초 관리자 준비와 같은 기준) */
+	static final int STAFF_MIN_PASSWORD_LENGTH = 10;
+
 	private final UserRepository users;
 	private final PasswordEncoder passwordEncoder;
 	private final LoginAttemptGuard attemptGuard;
@@ -81,6 +84,32 @@ public class AuthService {
 			throw new ApiException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "비밀번호가 맞지 않습니다.");
 		}
 		users.withdraw(userId);
+	}
+
+	/**
+	 * 비밀번호 변경. 로그인 상태에서도 현재 비밀번호를 다시 확인하고,
+	 * 틀린 횟수는 로그인 실패와 함께 세어서 대입 공격을 막는다.
+	 */
+	@Transactional
+	public void changePassword(long userId, String currentPassword, String newPassword) {
+		UsersRecord user = users.findById(userId).orElseThrow(() -> ApiException.notFound("회원"));
+		if (user.getPasswordHash() == null) {
+			throw ApiException.badRequest("NO_PASSWORD", "소셜 로그인 계정은 비밀번호를 바꿀 수 없습니다.");
+		}
+		attemptGuard.checkNotLocked(user.getEmail());
+		if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+			attemptGuard.recordFailure(user.getEmail());
+			throw ApiException.badRequest("INVALID_CURRENT_PASSWORD", "현재 비밀번호가 맞지 않습니다.");
+		}
+		if ("STAFF".equals(user.getType()) && newPassword.length() < STAFF_MIN_PASSWORD_LENGTH) {
+			throw ApiException.badRequest("WEAK_PASSWORD",
+					"운영자 비밀번호는 " + STAFF_MIN_PASSWORD_LENGTH + "자 이상으로 정해 주세요.");
+		}
+		if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
+			throw ApiException.badRequest("SAME_PASSWORD", "지금 쓰는 비밀번호와 다른 비밀번호로 정해 주세요.");
+		}
+		attemptGuard.reset(user.getEmail());
+		users.updatePasswordHash(userId, passwordEncoder.encode(newPassword));
 	}
 
 	/** 운영자 계정 생성 (최초 관리자 준비, 이후 운영자 추가 화면에서 사용) */

@@ -2,10 +2,11 @@ package com.aishop.api.catalog;
 
 import static com.aishop.api.jooq.Tables.CATEGORIES;
 import static com.aishop.api.jooq.Tables.INVENTORIES;
-import static com.aishop.api.jooq.Tables.INVENTORY_MOVEMENTS;
 import static com.aishop.api.jooq.Tables.LOCATIONS;
+import static com.aishop.api.jooq.Tables.ORDER_ITEMS;
 import static com.aishop.api.jooq.Tables.PRODUCTS;
 import static com.aishop.api.jooq.Tables.PRODUCT_IMAGES;
+import static com.aishop.api.jooq.Tables.SELLERS;
 import static com.aishop.api.jooq.Tables.SKUS;
 import static org.jooq.impl.DSL.arrayAggDistinct;
 import static org.jooq.impl.DSL.coalesce;
@@ -20,6 +21,7 @@ import static org.jooq.impl.DSL.selectOne;
 import static org.jooq.impl.DSL.sum;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -36,9 +38,11 @@ import com.aishop.api.catalog.CatalogRequests.UpdateSku;
 import com.aishop.api.catalog.CatalogViews.AdminProductDetail;
 import com.aishop.api.catalog.CatalogViews.AdminProductRow;
 import com.aishop.api.catalog.CatalogViews.AdminSku;
+import com.aishop.api.catalog.CatalogViews.CategoryPathItem;
 import com.aishop.api.catalog.CatalogViews.Grade;
 import com.aishop.api.catalog.CatalogViews.Image;
 import com.aishop.api.catalog.CatalogViews.ProductCard;
+import com.aishop.api.catalog.CatalogViews.ReturnInfo;
 import com.aishop.api.catalog.CatalogViews.ShopProductDetail;
 import com.aishop.api.catalog.CatalogViews.ShopSku;
 import com.aishop.api.common.db.JsonbMapper;
@@ -54,10 +58,12 @@ public class ProductRepository {
 
 	private final DSLContext dsl;
 	private final JsonbMapper jsonb;
+	private final WholesaleRepository wholesale;
 
-	public ProductRepository(DSLContext dsl, JsonbMapper jsonb) {
+	public ProductRepository(DSLContext dsl, JsonbMapper jsonb, WholesaleRepository wholesale) {
 		this.dsl = dsl;
 		this.jsonb = jsonb;
+		this.wholesale = wholesale;
 	}
 
 	// ------------------------------------------------------------------
@@ -77,16 +83,23 @@ public class ProductRepository {
 		Condition condition = PRODUCTS.STATUS.in(SHOP_VISIBLE)
 			.andExists(selectOne().from(SKUS).where(SKUS.PRODUCT_ID.eq(PRODUCTS.ID), SKUS.STATUS.eq(ACTIVE)))
 			.and(keywordCondition(search.keyword()))
-			.and(search.categoryIds() == null ? noCondition() : PRODUCTS.CATEGORY_ID.in(search.categoryIds()));
+			.and(search.categoryIds() == null ? noCondition() : PRODUCTS.CATEGORY_ID.in(search.categoryIds()))
+			// 땡처리관: 가장 싼 SKU가 정가보다 40% 이상 싼 상품
+			.and(search.ddaengOnly()
+					? maxListPrice.isNotNull()
+						.and(minPrice.mul(100).le(maxListPrice.mul(100 - ShopSearch.DDAENG_RATE)))
+					: noCondition());
 
 		SortField<?>[] orderBy = switch (search.sort()) {
 			case PRICE_ASC -> new SortField<?>[] { minPrice.asc(), PRODUCTS.ID.desc() };
 			case PRICE_DESC -> new SortField<?>[] { minPrice.desc(), PRODUCTS.ID.desc() };
 			case NEWEST -> new SortField<?>[] { PRODUCTS.ID.desc() };
+			case BEST -> new SortField<?>[] { recentSoldQty().desc(), PRODUCTS.ID.desc() };
 		};
 
 		List<ProductCard> items = dsl
-			.select(PRODUCTS.ID, PRODUCTS.NAME, PRODUCTS.BRAND, thumbnail, minPrice, maxListPrice, grades, available)
+			.select(PRODUCTS.ID, PRODUCTS.NAME, PRODUCTS.BRAND, thumbnail, minPrice, maxListPrice, grades, available,
+				PRODUCTS.BUSINESS_ONLY)
 			.from(PRODUCTS)
 			.where(condition)
 			.orderBy(orderBy)
@@ -95,7 +108,7 @@ public class ProductRepository {
 			.fetch(r -> new ProductCard(
 					r.value1(), r.value2(), r.value3(), r.value4(),
 					r.value5() == null ? 0 : r.value5(), r.value6(),
-					toGrades(r.value7()), toInt(r.value8())));
+					toGrades(r.value7()), toInt(r.value8()), r.value9()));
 
 		long total = dsl.fetchCount(PRODUCTS, condition);
 		return new PageResponse<>(items, search.page(), search.size(), total);
@@ -108,19 +121,72 @@ public class ProductRepository {
 			.map(p -> new ShopProductDetail(
 					p.getId(), p.getName(), p.getBrand(), p.getModelName(), p.getCategoryId(), p.getDescription(),
 					jsonb.toStringMap(p.getNoticeInfo()), p.getKcCertNo(), p.getShippingFee(),
-					p.getFreeShippingThreshold(), findShopSkus(productId), findImages(productId)));
+					p.getFreeShippingThreshold(), p.getBusinessOnly(), p.getImageReuseAllowed(), wholesale.find(productId),
+					spec(p), returnInfo(p), categoryPath(p.getCategoryId()), findShopSkus(productId),
+					findImages(productId)));
+	}
+
+	/** 최근 30일 동안 결제된 수량 (취소·결제대기 제외) */
+	private Field<BigDecimal> recentSoldQty() {
+		return field(select(coalesce(sum(ORDER_ITEMS.QTY), BigDecimal.ZERO))
+			.from(ORDER_ITEMS)
+			.join(SKUS).on(SKUS.ID.eq(ORDER_ITEMS.SKU_ID))
+			.where(SKUS.PRODUCT_ID.eq(PRODUCTS.ID))
+			.and(ORDER_ITEMS.STATUS.notIn("PENDING_PAYMENT", "CANCELLED"))
+			.and(ORDER_ITEMS.CREATED_AT.gt(currentOffsetDateTime().minus(30))));
+	}
+
+	private static ProductSpec spec(ProductsRecord p) {
+		return new ProductSpec(p.getOrigin(), p.getManufacturer(), p.getPackageSize(), p.getPackageWeightG());
+	}
+
+	private ReturnInfo returnInfo(ProductsRecord p) {
+		var seller = dsl.select(SELLERS.RETURN_ZIPCODE, SELLERS.RETURN_ADDRESS)
+			.from(SELLERS)
+			.where(SELLERS.ID.eq(p.getSellerId()))
+			.fetchOne();
+		return new ReturnInfo(seller == null ? null : seller.value1(), seller == null ? null : seller.value2(),
+				p.getShippingFee());
+	}
+
+	/** 최상위 카테고리부터 이 상품의 카테고리까지 (단계가 몇 개 안 되므로 위로 따라 올라간다) */
+	private List<CategoryPathItem> categoryPath(Long categoryId) {
+		List<CategoryPathItem> path = new ArrayList<>();
+		Long current = categoryId;
+		for (int depth = 0; current != null && depth < 10; depth++) {
+			var row = dsl.select(CATEGORIES.ID, CATEGORIES.NAME, CATEGORIES.PARENT_ID)
+				.from(CATEGORIES)
+				.where(CATEGORIES.ID.eq(current))
+				.fetchOne();
+			if (row == null) {
+				break;
+			}
+			path.addFirst(new CategoryPathItem(row.value1(), row.value2()));
+			current = row.value3();
+		}
+		return path;
+	}
+
+	public void updateSpec(long productId, ProductSpec spec) {
+		dsl.update(PRODUCTS)
+			.set(PRODUCTS.ORIGIN, blankToNull(spec.origin()))
+			.set(PRODUCTS.MANUFACTURER, blankToNull(spec.manufacturer()))
+			.set(PRODUCTS.PACKAGE_SIZE, blankToNull(spec.packageSize()))
+			.set(PRODUCTS.PACKAGE_WEIGHT_G, spec.packageWeightG())
+			.where(PRODUCTS.ID.eq(productId))
+			.execute();
 	}
 
 	private List<ShopSku> findShopSkus(long productId) {
 		Field<BigDecimal> available = skuAvailable();
 		return dsl.select(SKUS.ID, SKUS.OPTION_VALUES, SKUS.CONDITION_GRADE, SKUS.CONDITION_NOTE, SKUS.PRICE,
-				SKUS.LIST_PRICE, available)
+				SKUS.LIST_PRICE, SKUS.BUSINESS_PRICE, available)
 			.from(SKUS)
 			.where(SKUS.PRODUCT_ID.eq(productId), SKUS.STATUS.eq(ACTIVE))
 			.orderBy(SKUS.PRICE, SKUS.ID)
 			.fetch(r -> new ShopSku(r.value1(), jsonb.toStringMap(r.value2()),
-					Grade.of(ConditionGrade.valueOf(r.value3())), r.value4(), r.value5(), r.value6(),
-					toInt(r.value7())));
+					Grade.of(ConditionGrade.valueOf(r.value3())), r.value4(), r.value5(), r.value6(), r.value7(),
+					toInt(r.value8())));
 	}
 
 	// ------------------------------------------------------------------
@@ -168,7 +234,8 @@ public class ProductRepository {
 					p.getId(), p.getSellerId(), p.getName(), p.getBrand(), p.getModelName(), p.getCategoryId(),
 					p.getDescription(), jsonb.toStringMap(p.getNoticeInfo()), p.getKcCertNo(), p.getShippingFee(),
 					p.getFreeShippingThreshold(), ProductStatus.valueOf(p.getStatus()), p.getCreatedAt(),
-					p.getUpdatedAt(), findAdminSkus(productId), findImages(productId)));
+					p.getUpdatedAt(), p.getBusinessOnly(), p.getImageReuseAllowed(), wholesale.find(productId),
+					spec(p), findAdminSkus(productId), findImages(productId)));
 	}
 
 	private List<AdminSku> findAdminSkus(long productId) {
@@ -177,13 +244,13 @@ public class ProductRepository {
 		Field<BigDecimal> reserved = field(select(coalesce(sum(INVENTORIES.RESERVED), BigDecimal.ZERO))
 			.from(INVENTORIES).where(INVENTORIES.SKU_ID.eq(SKUS.ID)));
 		return dsl.select(SKUS.ID, SKUS.SKU_CODE, SKUS.OPTION_VALUES, SKUS.CONDITION_GRADE, SKUS.CONDITION_NOTE,
-				SKUS.BARCODE, SKUS.PRICE, SKUS.LIST_PRICE, SKUS.STATUS, onHand, reserved)
+				SKUS.BARCODE, SKUS.PRICE, SKUS.LIST_PRICE, SKUS.BUSINESS_PRICE, SKUS.STATUS, onHand, reserved)
 			.from(SKUS)
 			.where(SKUS.PRODUCT_ID.eq(productId), SKUS.STATUS.ne(DELETED_SKU))
 			.orderBy(SKUS.ID)
 			.fetch(r -> new AdminSku(r.value1(), r.value2(), jsonb.toStringMap(r.value3()),
 					Grade.of(ConditionGrade.valueOf(r.value4())), r.value5(), r.value6(), r.value7(), r.value8(),
-					SkuStatus.valueOf(r.value9()), toInt(r.value10()), toInt(r.value11())));
+					r.value9(), SkuStatus.valueOf(r.value10()), toInt(r.value11()), toInt(r.value12())));
 	}
 
 	public Optional<ProductsRecord> findProductRecord(long sellerId, long productId) {
@@ -289,43 +356,6 @@ public class ProductRepository {
 
 	public boolean locationBelongsTo(long sellerId, long locationId) {
 		return dsl.fetchExists(LOCATIONS, LOCATIONS.ID.eq(locationId).and(LOCATIONS.SELLER_ID.eq(sellerId)));
-	}
-
-	/**
-	 * 보유 재고(on_hand)를 qty만큼 늘리거나 줄인다.
-	 * 줄일 때는 예약된 수량 아래로 내려가지 않는 경우에만 반영한다.
-	 *
-	 * @return 반영 여부
-	 */
-	public boolean changeOnHand(long skuId, long locationId, int qty) {
-		if (qty >= 0) {
-			dsl.insertInto(INVENTORIES)
-				.set(INVENTORIES.SKU_ID, skuId)
-				.set(INVENTORIES.LOCATION_ID, locationId)
-				.set(INVENTORIES.ON_HAND, qty)
-				.onConflict(INVENTORIES.SKU_ID, INVENTORIES.LOCATION_ID)
-				.doUpdate()
-				.set(INVENTORIES.ON_HAND, INVENTORIES.ON_HAND.plus(qty))
-				.set(INVENTORIES.UPDATED_AT, currentOffsetDateTime())
-				.execute();
-			return true;
-		}
-		return dsl.update(INVENTORIES)
-			.set(INVENTORIES.ON_HAND, INVENTORIES.ON_HAND.plus(qty))
-			.set(INVENTORIES.UPDATED_AT, currentOffsetDateTime())
-			.where(INVENTORIES.SKU_ID.eq(skuId), INVENTORIES.LOCATION_ID.eq(locationId))
-			.and(INVENTORIES.ON_HAND.plus(qty).ge(INVENTORIES.RESERVED))
-			.execute() == 1;
-	}
-
-	public void insertMovement(long skuId, long locationId, int qty, String type, String memo) {
-		dsl.insertInto(INVENTORY_MOVEMENTS)
-			.set(INVENTORY_MOVEMENTS.SKU_ID, skuId)
-			.set(INVENTORY_MOVEMENTS.LOCATION_ID, locationId)
-			.set(INVENTORY_MOVEMENTS.QTY, qty)
-			.set(INVENTORY_MOVEMENTS.TYPE, type)
-			.set(INVENTORY_MOVEMENTS.MEMO, memo)
-			.execute();
 	}
 
 	// ------------------------------------------------------------------

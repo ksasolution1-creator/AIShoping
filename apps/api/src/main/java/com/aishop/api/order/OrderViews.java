@@ -59,12 +59,13 @@ public final class OrderViews {
 			String customerEmail, String clientKey) {
 	}
 
+	/** @param reviewed 구매후기를 이미 썼는지 */
 	public record OrderLineView(long id, Long skuId, String productName, String optionText, String conditionGrade,
-			String thumbnailUrl, int qty, long unitPrice, long lineTotal, String status) {
+			String thumbnailUrl, int qty, long unitPrice, long lineTotal, String status, boolean reviewed) {
 	}
 
-	public record ShipmentView(long id, String carrierName, String trackingNo, String status, OffsetDateTime shippedAt,
-			OffsetDateTime deliveredAt) {
+	public record ShipmentView(long id, String carrierName, String trackingNo, String trackingUrl, String status,
+			OffsetDateTime shippedAt, OffsetDateTime deliveredAt) {
 	}
 
 	public record PaymentView(String method, String easyPayProvider, long amount, long balanceAmount, String status,

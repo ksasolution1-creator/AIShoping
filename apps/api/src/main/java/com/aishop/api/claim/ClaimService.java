@@ -45,7 +45,8 @@ public class ClaimService {
 	/** 운영자가 상품을 취소할 수 있는 상태 (출고 전) */
 	public static final Set<String> SELLER_CANCELLABLE = Set.of("PAID", "PREPARING");
 	/** 반품 신청이 가능한 상태 */
-	public static final Set<String> RETURNABLE = Set.of("SHIPPED", "DELIVERED", "CONFIRMED");
+	/** 구매확정 전까지만 온라인으로 반품 신청을 받는다 (확정 후 하자는 고객센터로) */
+	public static final Set<String> RETURNABLE = Set.of("SHIPPED", "DELIVERED");
 
 	private static final Set<String> CLOSED_ITEM = Set.of("CANCELLED", "RETURNED");
 
@@ -131,7 +132,9 @@ public class ClaimService {
 		OrdersRecord order = lockCustomerOrder(userId, orderNo);
 		OrderItemsRecord item = requireItem(order, itemId, null);
 		if (!RETURNABLE.contains(item.getStatus())) {
-			throw ApiException.conflict("NOT_RETURNABLE", "배송이 시작된 상품만 반품을 신청할 수 있습니다.");
+			throw ApiException.conflict("NOT_RETURNABLE", "CONFIRMED".equals(item.getStatus())
+					? "구매확정한 상품은 고객센터로 문의해 주세요."
+					: "배송이 시작된 상품만 반품을 신청할 수 있습니다.");
 		}
 		if (claims.hasOpenClaim(item.getId())) {
 			throw ApiException.conflict("CLAIM_IN_PROGRESS", "이미 처리 중인 반품이 있습니다.");
@@ -225,7 +228,7 @@ public class ClaimService {
 		if (!"DISPOSE".equals(grade) && item.getSkuId() != null) {
 			long locationId = restockLocation(sellerId, item, request.restockLocationId());
 			long skuId = restockSku(item.getSkuId(), grade, claimId);
-			products.changeOnHand(skuId, locationId, item.getQty());
+			inventory.changeOnHand(skuId, locationId, item.getQty());
 			orders.insertMovement(skuId, locationId, item.getQty(), "RETURN_IN", "CLAIM", claimId, actorId);
 			claim.setRestockSkuId(skuId);
 			claim.setRestockLocationId(locationId);

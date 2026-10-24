@@ -65,6 +65,7 @@ export type AdminSku = {
   barcode: string | null;
   price: number;
   listPrice: number | null;
+  businessPrice: number | null;
   status: SkuStatus;
   onHand: number;
   reserved: number;
@@ -87,9 +88,22 @@ export type AdminProductDetail = {
   status: ProductStatus;
   createdAt: string;
   updatedAt: string;
+  businessOnly: boolean;
+  imageReuseAllowed: boolean;
+  wholesale: WholesaleTerms;
+  spec: ProductSpec;
   skus: AdminSku[];
   images: ProductImage[];
 };
+
+export type PriceTier = { minQty: number; discountBp: number };
+export type ProductSpec = {
+  origin: string | null;
+  manufacturer: string | null;
+  packageSize: string | null;
+  packageWeightG: number | null;
+};
+export type WholesaleTerms = { minOrderQty: number; shipWithinDays: number; tiers: PriceTier[] };
 
 export type ProductFields = {
   name: string;
@@ -202,6 +216,8 @@ export const authApi = {
   login: (email: string, password: string) =>
     request<Me>("/api/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
   logout: () => request<void>("/api/auth/logout", { method: "POST" }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<void>("/api/me/password", { method: "POST", body: JSON.stringify({ currentPassword, newPassword }) }),
 };
 
 export type OrderSummary = {
@@ -244,6 +260,7 @@ export type OrderDetail = {
     status: string;
   }[];
   itemsTotal: number;
+  discountTotal: number;
   shippingFee: number;
   payAmount: number;
   payment: { method: string | null; easyPayProvider: string | null; amount: number; balanceAmount: number; status: string; approvedAt: string | null } | null;
@@ -365,6 +382,10 @@ export const api = {
     request<{ id: number }>("/api/admin/products", { method: "POST", body: JSON.stringify(body) }),
   updateProduct: (id: number, body: ProductFields) =>
     request<AdminProductDetail>(`/api/admin/products/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  updateSpec: (id: number, body: ProductSpec) =>
+    request<AdminProductDetail>(`/api/admin/products/${id}/spec`, { method: "PUT", body: JSON.stringify(body) }),
+  updateWholesale: (id: number, body: WholesaleTerms) =>
+    request<AdminProductDetail>(`/api/admin/products/${id}/wholesale`, { method: "PUT", body: JSON.stringify(body) }),
   changeStatus: (id: number, status: ProductStatus) =>
     request<AdminProductDetail>(`/api/admin/products/${id}/status`, {
       method: "PATCH",
@@ -421,3 +442,324 @@ export function gradeLabel(code: string | null | undefined) {
   if (!code) return null;
   return GRADES.find((g) => g.code === code)?.label ?? code;
 }
+
+// ------------------------------------------------------------------
+// 재고·매입
+// ------------------------------------------------------------------
+
+export type Location = { id: number; name: string; type: "WAREHOUSE" | "STORE" };
+export type LocationStock = { locationId: number; locationName: string; onHand: number; reserved: number };
+
+export type StockRow = {
+  skuId: number;
+  skuCode: string;
+  barcode: string | null;
+  productId: number;
+  productName: string;
+  optionText: string;
+  grade: Grade;
+  price: number;
+  cost: number | null;
+  onHand: number;
+  reserved: number;
+  available: number;
+  locations: LocationStock[];
+};
+
+export type Movement = {
+  id: number;
+  createdAt: string;
+  locationName: string;
+  qty: number;
+  type: string;
+  refType: string | null;
+  refId: number | null;
+  memo: string | null;
+  actorName: string | null;
+};
+
+export const MOVEMENT_LABEL: Record<string, string> = {
+  PURCHASE_IN: "매입 입고",
+  SALE_OUT: "판매 출고",
+  RETURN_IN: "반품 입고",
+  ADJUST: "조정",
+  TRANSFER_IN: "이동 입고",
+  TRANSFER_OUT: "이동 출고",
+  GRADE_CHANGE: "등급 변경",
+};
+
+export type Supplier = {
+  id: number;
+  name: string;
+  businessNo: string | null;
+  contactName: string | null;
+  phone: string | null;
+  memo: string | null;
+  active: boolean;
+};
+export type SupplierForm = Omit<Supplier, "id" | "active"> & { active?: boolean };
+
+export type PurchaseStatus = "DRAFT" | "RECEIVED" | "CANCELLED";
+export const PURCHASE_STATUS_LABEL: Record<PurchaseStatus, string> = {
+  DRAFT: "작성 중",
+  RECEIVED: "입고 완료",
+  CANCELLED: "취소",
+};
+
+export type PurchaseSummary = {
+  id: number;
+  purchaseNo: string;
+  purchasedOn: string;
+  status: PurchaseStatus;
+  supplierName: string | null;
+  locationName: string;
+  itemCount: number;
+  totalQty: number;
+  totalCost: number;
+};
+
+export type PurchaseItem = {
+  skuId: number;
+  skuCode: string;
+  productName: string;
+  optionText: string;
+  grade: Grade;
+  price: number;
+  qty: number;
+  unitCost: number;
+};
+
+export type PurchaseDetail = {
+  id: number;
+  purchaseNo: string;
+  purchasedOn: string;
+  status: PurchaseStatus;
+  supplierId: number | null;
+  supplierName: string | null;
+  locationId: number;
+  locationName: string;
+  memo: string | null;
+  totalCost: number;
+  receivedAt: string | null;
+  items: PurchaseItem[];
+};
+
+export type PurchaseForm = {
+  supplierId: number | null;
+  locationId: number;
+  purchasedOn: string | null;
+  memo: string | null;
+  items: { skuId: number; qty: number; unitCost: number }[];
+};
+
+export const inventoryApi = {
+  locations: () => request<Location[]>("/api/admin/locations"),
+  stock: (params: { q?: string; locationId?: number | null; maxAvailable?: number | null; page?: number; size?: number }) => {
+    const search = new URLSearchParams();
+    if (params.q) search.set("q", params.q);
+    if (params.locationId) search.set("locationId", String(params.locationId));
+    if (params.maxAvailable != null) search.set("maxAvailable", String(params.maxAvailable));
+    if (params.page) search.set("page", String(params.page));
+    if (params.size) search.set("size", String(params.size));
+    return request<Page<StockRow>>(`/api/admin/inventory?${search}`);
+  },
+  lookup: (code: string) => request<StockRow>(`/api/admin/inventory/lookup?code=${encodeURIComponent(code)}`),
+  movements: (skuId: number) => request<Movement[]>(`/api/admin/inventory/${skuId}/movements`),
+  adjust: (body: { skuId: number; locationId: number; qty: number; memo: string }) =>
+    request<StockRow>("/api/admin/inventory/adjust", { method: "POST", body: JSON.stringify(body) }),
+  transfer: (body: { skuId: number; fromLocationId: number; toLocationId: number; qty: number; memo: string | null }) =>
+    request<StockRow>("/api/admin/inventory/transfer", { method: "POST", body: JSON.stringify(body) }),
+
+  suppliers: (all = false) => request<Supplier[]>(`/api/admin/suppliers${all ? "?all=true" : ""}`),
+  createSupplier: (body: SupplierForm) =>
+    request<{ id: number }>("/api/admin/suppliers", { method: "POST", body: JSON.stringify(body) }),
+  updateSupplier: (id: number, body: SupplierForm) =>
+    request<void>(`/api/admin/suppliers/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+
+  purchases: (params: { status?: string; q?: string; page?: number }) => {
+    const search = new URLSearchParams();
+    if (params.status) search.set("status", params.status);
+    if (params.q) search.set("q", params.q);
+    if (params.page) search.set("page", String(params.page));
+    return request<Page<PurchaseSummary>>(`/api/admin/purchases?${search}`);
+  },
+  purchase: (id: number) => request<PurchaseDetail>(`/api/admin/purchases/${id}`),
+  createPurchase: (body: PurchaseForm) =>
+    request<PurchaseDetail>("/api/admin/purchases", { method: "POST", body: JSON.stringify(body) }),
+  updatePurchase: (id: number, body: PurchaseForm) =>
+    request<PurchaseDetail>(`/api/admin/purchases/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  receivePurchase: (id: number) => request<PurchaseDetail>(`/api/admin/purchases/${id}/receive`, { method: "POST" }),
+  cancelPurchase: (id: number) => request<PurchaseDetail>(`/api/admin/purchases/${id}/cancel`, { method: "POST" }),
+};
+
+// ------------------------------------------------------------------
+// 배송·송장
+// ------------------------------------------------------------------
+
+export type ReadyOrder = {
+  orderNo: string;
+  paidAt: string | null;
+  status: string;
+  receiverName: string | null;
+  itemsText: string;
+  totalQty: number;
+  payAmount: number;
+};
+
+export type ShipmentRow = {
+  id: number;
+  orderNo: string;
+  receiverName: string | null;
+  carrierName: string | null;
+  trackingNo: string | null;
+  trackingUrl: string | null;
+  status: string;
+  shippedAt: string | null;
+  deliveredAt: string | null;
+  itemsText: string;
+};
+
+export const SHIPMENT_STATUS_LABEL: Record<string, string> = {
+  READY: "출고 준비",
+  SHIPPED: "배송중",
+  IN_TRANSIT: "배송중",
+  OUT_FOR_DELIVERY: "배송 출발",
+  DELIVERED: "배송완료",
+  FAILED: "배송 실패",
+  CANCELLED: "취소",
+};
+
+export type ImportResult = {
+  success: number;
+  failed: number;
+  lines: { row: number; orderNo: string; trackingNo: string; ok: boolean; message: string }[];
+};
+
+export type SenderSettings = {
+  senderName: string | null;
+  senderPhone: string | null;
+  shipFromZipcode: string | null;
+  shipFromAddress: string | null;
+  returnZipcode: string | null;
+  returnAddress: string | null;
+};
+
+/** 파일 내려받기 (POST + CSRF). 응답 헤더의 파일 이름으로 저장한다 */
+async function downloadPost(path: string, body: unknown, fallbackName: string) {
+  const token = await csrfToken(false);
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(token ? { "X-XSRF-TOKEN": token } : {}) },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => null);
+    throw new ApiError(res.status, err?.detail ?? `내려받지 못했습니다. (${res.status})`, err?.code);
+  }
+  const disposition = res.headers.get("Content-Disposition") ?? "";
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition)?.[1];
+  const name = encoded ? decodeURIComponent(encoded) : fallbackName;
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export const shippingApi = {
+  newOrders: () => request<ReadyOrder[]>("/api/admin/shipping/new-orders"),
+  ready: () => request<ReadyOrder[]>("/api/admin/shipping/ready"),
+  accept: (orderNos: string[]) =>
+    request<{ success: number; failed: number; errors: string[] }>("/api/admin/shipping/accept", {
+      method: "POST",
+      body: JSON.stringify({ orderNos }),
+    }),
+  exportSheet: (orderNos: string[]) => downloadPost("/api/admin/shipping/export", { orderNos }, "송장.xlsx"),
+  importTracking: (file: File, carrierId: number | null) => {
+    const form = new FormData();
+    form.append("file", file);
+    const query = carrierId ? `?carrierId=${carrierId}` : "";
+    return request<ImportResult>(`/api/admin/shipping/import${query}`, { method: "POST", body: form });
+  },
+  shipments: (params: { status?: string; q?: string; page?: number }) => {
+    const search = new URLSearchParams();
+    if (params.status) search.set("status", params.status);
+    if (params.q) search.set("q", params.q);
+    if (params.page) search.set("page", String(params.page));
+    return request<Page<ShipmentRow>>(`/api/admin/shipping/shipments?${search}`);
+  },
+  delivered: (id: number) => request<void>(`/api/admin/shipping/shipments/${id}/delivered`, { method: "POST" }),
+  sender: () => request<SenderSettings>("/api/admin/shipping/sender"),
+  updateSender: (body: SenderSettings) =>
+    request<SenderSettings>("/api/admin/shipping/sender", { method: "PUT", body: JSON.stringify(body) }),
+};
+
+// ------------------------------------------------------------------
+// 상품문의·구매후기
+// ------------------------------------------------------------------
+
+export type AdminQuestion = {
+  id: number;
+  productId: number;
+  productName: string;
+  author: string;
+  question: string;
+  secret: boolean;
+  answer: string | null;
+  answeredAt: string | null;
+  createdAt: string;
+};
+
+export type AdminReview = {
+  id: number;
+  productId: number;
+  productName: string;
+  author: string;
+  rating: number;
+  content: string;
+  hidden: boolean;
+  createdAt: string;
+};
+
+export const communityAdminApi = {
+  questions: (unanswered: boolean, page = 0) =>
+    request<Page<AdminQuestion>>(`/api/admin/questions?unanswered=${unanswered}&page=${page}`),
+  answer: (id: number, answer: string) =>
+    request<void>(`/api/admin/questions/${id}/answer`, { method: "POST", body: JSON.stringify({ answer }) }),
+  reviews: (page = 0) => request<Page<AdminReview>>(`/api/admin/reviews?page=${page}`),
+  setHidden: (id: number, hidden: boolean) =>
+    request<void>(`/api/admin/reviews/${id}/hidden`, { method: "POST", body: JSON.stringify({ hidden }) }),
+};
+
+// ------------------------------------------------------------------
+// 사업자 회원
+// ------------------------------------------------------------------
+
+export type BusinessApplication = {
+  userId: number;
+  email: string | null;
+  userName: string;
+  businessNo: string;
+  businessName: string;
+  ceoName: string;
+  businessItem: string | null;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  rejectReason: string | null;
+  createdAt: string;
+  reviewedAt: string | null;
+};
+
+export const businessAdminApi = {
+  applications: (status: string, page = 0) =>
+    request<Page<BusinessApplication>>(`/api/admin/business-members?status=${status}&page=${page}`),
+  review: (userId: number, approve: boolean, rejectReason: string | null) =>
+    request<void>(`/api/admin/business-members/${userId}/review`, {
+      method: "POST",
+      body: JSON.stringify({ approve, rejectReason }),
+    }),
+  updateProductTerms: (
+    productId: number,
+    body: { businessOnly: boolean; imageReuseAllowed: boolean; skuPrices: { skuId: number; businessPrice: number | null }[] },
+  ) => request<AdminProductDetail>(`/api/admin/products/${productId}/business`, { method: "PUT", body: JSON.stringify(body) }),
+};

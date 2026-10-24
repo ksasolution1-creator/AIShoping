@@ -5,6 +5,7 @@ import { Suspense } from "react";
 
 import { ApiError, fetchProduct } from "@/lib/api";
 import { formatWon } from "@/lib/format";
+import { ProductCommunity } from "./ProductCommunity";
 import { ProductPurchasePanel } from "./ProductPurchasePanel";
 
 type Params = Promise<{ id: string }>;
@@ -28,9 +29,6 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 export default function ProductPage({ params }: { params: Params }) {
   return (
     <div className="pt-4">
-      <Link href="/" className="text-sm text-ink-faint hover:text-ink-soft">
-        ← 상품 목록
-      </Link>
       <Suspense fallback={<DetailSkeleton />}>
         <ProductDetail params={params} />
       </Suspense>
@@ -41,9 +39,24 @@ export default function ProductPage({ params }: { params: Params }) {
 async function ProductDetail({ params }: { params: Params }) {
   const product = await loadProduct(params);
   const notice = Object.entries(product.noticeInfo);
+  const { spec, returnInfo } = product;
 
   return (
-    <div className="flex flex-col gap-12 pt-4">
+    <div className="flex flex-col gap-12">
+      <nav aria-label="카테고리 경로" className="-mb-8 flex flex-wrap items-center gap-1 text-sm text-ink-faint">
+        <Link href="/" className="hover:text-ink-soft">
+          홈
+        </Link>
+        {product.categoryPath.map((c) => (
+          <span key={c.id} className="flex items-center gap-1">
+            <span aria-hidden>›</span>
+            <Link href={`/?categoryId=${c.id}`} className="hover:text-ink-soft">
+              {c.name}
+            </Link>
+          </span>
+        ))}
+      </nav>
+
       <ProductPurchasePanel product={product} />
 
       <section className="flex flex-col gap-3">
@@ -52,6 +65,8 @@ async function ProductDetail({ params }: { params: Params }) {
           {product.description || "등록된 설명이 없습니다."}
         </p>
       </section>
+
+      <ProductCommunity productId={product.id} />
 
       <section className="flex flex-col gap-3">
         <h2 className="border-b border-ink pb-2 text-base font-bold">배송 안내</h2>
@@ -75,10 +90,43 @@ async function ProductDetail({ params }: { params: Params }) {
       </section>
 
       <section className="flex flex-col gap-3">
+        <h2 className="border-b border-ink pb-2 text-base font-bold">반품·교환 안내</h2>
+        <dl className="grid grid-cols-[7rem_1fr] gap-y-2 text-sm">
+          <dt className="text-ink-faint">반품 배송비</dt>
+          <dd>
+            단순 변심은 편도 {formatWon(returnInfo.oneWayFee)}
+            <span className="text-ink-faint"> (무료배송으로 받은 주문은 왕복 {formatWon(returnInfo.oneWayFee * 2)})</span>
+            <span className="block text-ink-faint">상품 불량·오배송 등 판매자 사유는 반품 배송비가 없습니다.</span>
+          </dd>
+          <dt className="text-ink-faint">신청 기간</dt>
+          <dd>구매확정 전까지 주문 상세에서 신청할 수 있습니다. 배송완료 8일 뒤 자동으로 구매확정됩니다.</dd>
+          {returnInfo.returnAddress && (
+            <>
+              <dt className="text-ink-faint">반품지</dt>
+              <dd>
+                {returnInfo.returnZipcode && `[${returnInfo.returnZipcode}] `}
+                {returnInfo.returnAddress}
+              </dd>
+            </>
+          )}
+        </dl>
+      </section>
+
+      <section className="flex flex-col gap-3">
         <h2 className="border-b border-ink pb-2 text-base font-bold">상품정보 제공고시</h2>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[20rem] text-sm">
             <tbody>
+              {spec.origin && <NoticeRow label="원산지" value={spec.origin} />}
+              {spec.manufacturer && <NoticeRow label="제조사·수입원" value={spec.manufacturer} />}
+              {(spec.packageSize || spec.packageWeightG != null) && (
+                <NoticeRow
+                  label="포장 부피·무게"
+                  value={[spec.packageSize, spec.packageWeightG != null ? `${(spec.packageWeightG / 1000).toLocaleString("ko-KR")}kg` : null]
+                    .filter(Boolean)
+                    .join(" / ")}
+                />
+              )}
               {product.brand && <NoticeRow label="브랜드" value={product.brand} />}
               {product.modelName && <NoticeRow label="모델명" value={product.modelName} />}
               {product.kcCertNo && <NoticeRow label="KC 인증번호" value={product.kcCertNo} />}

@@ -3,13 +3,13 @@
 /*
   떨고래 마켓 디자인 토큰
   - 바다(고래 파랑·남색) 위에 노란 가격표와 빨간 할인표가 떠다니는 땡처리 창고 느낌
-  - 제목·로고는 둥글고 굵은 Jua, 본문은 IBM Plex Sans KR
+  - 로고·배지는 둥글고 굵은 Jua, 본문은 기기 기본 고딕(맑은 고딕·애플 SD 산돌고딕 Neo)
   - 상태등급(새상품·반품·리퍼·중고·전시)은 고정 색으로 구분
 */
 @theme {
-  --color-ink: #0a2e6e;
-  --color-ink-soft: #3d5480;
-  --color-ink-faint: #7d8cab;
+  --color-ink: #111111;
+  --color-ink-soft: #444444;
+  --color-ink-faint: #767676;
   --color-line: #dde6f3;
   --color-surface: #ffffff;
   --color-surface-muted: #f1f6fd;
@@ -32,8 +32,8 @@
   --color-grade-used: #b26a00;
   --color-grade-display: #5b6578;
 
-  --font-sans: var(--font-plex-kr), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-  --font-display: var(--font-jua), var(--font-plex-kr), "Apple SD Gothic Neo", sans-serif;
+  --font-sans: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif;
+  --font-display: var(--font-jua), "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", sans-serif;
 
   --animate-bob: bob 4s ease-in-out infinite;
 

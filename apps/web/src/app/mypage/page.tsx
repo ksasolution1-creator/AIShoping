@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { WhaleLoader } from "@/components/brand/WhaleLoader";
 import { TextField } from "@/components/AuthCard";
 import { authApi, ClientApiError, type Me } from "@/lib/client-api";
+import { PasswordChange } from "./PasswordChange";
 
 export default function MyPage() {
   const router = useRouter();
@@ -56,12 +57,21 @@ export default function MyPage() {
           주문·배송 조회
           <span className="text-ink-faint">›</span>
         </Link>
+        <Link href="/wishlist" className="flex items-center justify-between px-4 py-3.5 text-sm hover:bg-surface-muted">
+          찜한 상품
+          <span className="text-ink-faint">›</span>
+        </Link>
+        <Link href="/business" className="flex items-center justify-between px-4 py-3.5 text-sm hover:bg-surface-muted">
+          사업자 회원 인증
+          <span className="text-ink-faint">›</span>
+        </Link>
         {["취소·반품 내역", "배송지 관리"].map((item) => (
           <div key={item} className="flex items-center justify-between px-4 py-3.5 text-sm">
             {item}
             <span className="text-xs text-ink-faint">준비중</span>
           </div>
         ))}
+        <PasswordChange email={me.email} />
       </section>
 
       <button type="button" onClick={logout} className="h-11 rounded-md border border-line text-sm hover:bg-surface-muted">

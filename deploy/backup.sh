@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # DB와 업로드 사진을 매일 백업한다 (14일 보관).
-# crontab 예: 30 3 * * * /home/ubuntu/AIShoping/deploy/backup.sh >> /home/ubuntu/backup.log 2>&1
+# crontab 예: 30 3 * * * $HOME/AIShoping/deploy/backup.sh >> $HOME/backup.log 2>&1
 set -euo pipefail
 
 cd "$(dirname "$0")"

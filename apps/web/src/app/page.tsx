@@ -5,6 +5,7 @@ import { HeroBanner } from "@/components/brand/HeroBanner";
 import { ProductCardItem } from "@/components/ProductCardItem";
 import {
   fetchCategories,
+  fetchPopularKeywords,
   fetchProducts,
   type Category,
   type ProductSort,
@@ -14,6 +15,7 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const SORTS: { value: ProductSort; label: string }[] = [
   { value: "NEWEST", label: "최신순" },
+  { value: "BEST", label: "판매순" },
   { value: "PRICE_ASC", label: "낮은 가격순" },
   { value: "PRICE_DESC", label: "높은 가격순" },
 ];
@@ -32,6 +34,7 @@ function parseFilters(raw: Record<string, string | string[] | undefined>) {
     q: first(raw.q)?.trim() || undefined,
     categoryId: Number.isInteger(categoryId) && categoryId > 0 ? categoryId : undefined,
     sort: SORTS.some((s) => s.value === sort) ? sort : "NEWEST",
+    ddaeng: first(raw.ddaeng) === "1",
     page: Number.isInteger(page) && page > 0 ? page : 0,
   } as const;
 }
@@ -44,6 +47,7 @@ function buildHref(filters: Filters, change: Partial<Filters>) {
   if (next.q) params.set("q", next.q);
   if (next.categoryId) params.set("categoryId", String(next.categoryId));
   if (next.sort && next.sort !== "NEWEST") params.set("sort", next.sort);
+  if (next.ddaeng) params.set("ddaeng", "1");
   if (next.page) params.set("page", String(next.page));
   const query = params.toString();
   return query ? `/?${query}` : "/";
@@ -55,7 +59,7 @@ export default function HomePage({ searchParams }: { searchParams: SearchParams 
       <HeroBanner />
 
       <section className="flex flex-col gap-1">
-        <h2 className="font-display text-2xl text-navy">오늘의 땡처리</h2>
+        <h2 className="text-2xl font-bold text-navy">오늘의 땡처리</h2>
         <p className="text-sm text-ink-soft">
           모든 상품에 상태등급과 실물 사진을 표시합니다. 같은 상품도 상태에 따라 가격이 다릅니다.
         </p>
@@ -63,6 +67,10 @@ export default function HomePage({ searchParams }: { searchParams: SearchParams 
 
       <Suspense fallback={<div className="h-9" />}>
         <CategoryTabs searchParams={searchParams} />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <PopularKeywords />
       </Suspense>
 
       <Suspense fallback={<ProductGridSkeleton />}>
@@ -109,6 +117,31 @@ async function CategoryTabs({ searchParams }: { searchParams: SearchParams }) {
   );
 }
 
+async function PopularKeywords() {
+  let keywords: string[] = [];
+  try {
+    keywords = await fetchPopularKeywords();
+  } catch {
+    return null;
+  }
+  if (keywords.length === 0) return null;
+  return (
+    <nav aria-label="인기검색어" className="-mx-4 flex items-center gap-3 overflow-x-auto px-4 text-sm sm:mx-0 sm:px-0">
+      <span className="shrink-0 font-semibold text-navy">인기검색어</span>
+      <ol className="flex gap-3">
+        {keywords.map((k, i) => (
+          <li key={k} className="shrink-0">
+            <Link href={`/?q=${encodeURIComponent(k)}`} className="text-ink-soft hover:text-brand">
+              <span className="mr-1 font-bold text-brand tabular-nums">{i + 1}</span>
+              {k}
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
 async function ProductResults({ searchParams }: { searchParams: SearchParams }) {
   const filters = parseFilters(await searchParams);
   const result = await fetchProducts({ ...filters, size: PAGE_SIZE });
@@ -117,6 +150,7 @@ async function ProductResults({ searchParams }: { searchParams: SearchParams }) 
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3 border-b border-line pb-3">
         <p className="text-sm text-ink-soft">
+          {filters.ddaeng && <strong className="mr-1 text-sale">땡처리관 (40% 이상 할인)</strong>}
           {filters.q && (
             <>
               <strong className="text-ink">&lsquo;{filters.q}&rsquo;</strong> 검색 결과{" "}

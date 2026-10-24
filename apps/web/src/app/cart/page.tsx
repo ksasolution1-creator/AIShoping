@@ -77,6 +77,10 @@ export default function CartPage() {
                       {item.available <= 0 ? "품절" : `남은 수량 ${item.available}개 - 수량을 줄여 주세요`}
                     </p>
                   )}
+                  {item.minimumNotice && <p className="text-xs font-medium text-sale">{item.minimumNotice}</p>}
+                  {item.unitDiscount > 0 && (
+                    <p className="text-xs text-brand">수량 할인 개당 −{formatWon(item.unitDiscount)}</p>
+                  )}
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <div className="flex items-center rounded border border-line">
                       <button
@@ -120,6 +124,12 @@ export default function CartPage() {
                 <dt className="text-ink-soft">상품 금액</dt>
                 <dd className="tabular-nums">{formatWon(cart.itemsTotal)}</dd>
               </div>
+              {cart.discountTotal > 0 && (
+                <div className="flex justify-between text-brand">
+                  <dt>수량 할인</dt>
+                  <dd className="tabular-nums">−{formatWon(cart.discountTotal)}</dd>
+                </div>
+              )}
               <div className="flex justify-between">
                 <dt className="text-ink-soft">배송비</dt>
                 <dd className="tabular-nums">{cart.shippingFee === 0 ? "무료" : formatWon(cart.shippingFee)}</dd>
