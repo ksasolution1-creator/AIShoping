@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: aishop-api
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/aishop}
+    username: ${DB_USERNAME:aishop}
+    password: ${DB_PASSWORD:aishop}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  flyway:
+    locations: classpath:db/migration
+    clean-disabled: true
+  jooq:
+    sql-dialect: postgres
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+  jackson:
+    time-zone: Asia/Seoul
+  session:
+    # 로그인 세션은 Redis에 저장 (서버를 여러 대로 늘려도 로그인 유지)
+    timeout: ${SESSION_TIMEOUT:12h}
+    redis:
+      namespace: aishop:session
+
+server:
+  port: ${PORT:18080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+aishop:
+  db:
+    # 이 시간(ms)보다 오래 걸린 쿼리는 WARN 로그로 남긴다
+    slow-query-threshold-ms: ${SLOW_QUERY_THRESHOLD_MS:200}
+  storage:
+    # 업로드 파일 저장 폴더 (로컬 개발용). 운영은 S3 구현으로 교체
+    local-dir: ${STORAGE_LOCAL_DIR:uploads}
+  session:
+    # 세션 쿠키 Secure 속성. 운영(HTTPS)에서는 true
+    cookie-secure: ${SESSION_COOKIE_SECURE:false}
+  auth:
+    max-login-failures: 5
+    login-lock-minutes: 15
+    terms-version: "2026-10-01"
+  admin:
+    # 최초 관리자 계정 (계정이 없을 때만 생성)
+    bootstrap-email: ${ADMIN_EMAIL:}
+    bootstrap-password: ${ADMIN_PASSWORD:}
+  crypto:
+    # 개인정보 암호화 키 (32바이트 base64). 비우면 개발용 키 사용 - 운영에서는 반드시 설정
+    field-key: ${FIELD_ENCRYPTION_KEY:}
+  toss:
+    # 토스페이먼츠 개발자센터 > API 키 (테스트 키로 개발)
+    client-key: ${TOSS_CLIENT_KEY:}
+    secret-key: ${TOSS_SECRET_KEY:}

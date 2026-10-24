@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/* 판매관리: 빠르게 훑고 처리하는 화면. 밀도 높은 표, 상태는 색 칩으로 구분 */
+@theme {
+  --color-ink: #1a1c1f;
+  --color-ink-soft: #4b5059;
+  --color-ink-faint: #8a8f98;
+  --color-line: #e3e5e8;
+  --color-surface: #ffffff;
+  --color-canvas: #f4f5f7;
+  --color-surface-muted: #eef0f2;
+  --color-brand: #0e5c4a;
+  --color-brand-strong: #0a4637;
+  --color-ok: #12805c;
+  --color-warn: #b26a00;
+  --color-danger: #c62a24;
+  --color-info: #2459c7;
+
+  --font-sans: var(--font-plex-kr), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  word-break: keep-all;
+}
+
+@utility input {
+  @apply h-9 w-full min-w-0 rounded border border-line bg-surface px-2.5 text-sm outline-none focus:border-brand;
+}
+@utility btn {
+  @apply inline-flex h-9 items-center justify-center gap-1.5 rounded px-3.5 text-sm font-medium whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-brand text-white hover:bg-brand-strong;
+}
+@utility btn-outline {
+  @apply btn border border-line bg-surface text-ink hover:bg-surface-muted;
+}
+@utility card {
+  @apply rounded-md border border-line bg-surface;
+}
+@utility field-label {
+  @apply text-xs font-medium text-ink-soft;
+}

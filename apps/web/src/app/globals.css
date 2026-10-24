@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+/*
+  AIShop 쇼핑몰 토큰
+  - 아울렛 매장의 가격표 느낌: 흰 바탕, 진한 먹색 글자, 할인율은 빨강
+  - 상태등급(새상품·반품·리퍼·중고·전시)은 고정 색으로 구분
+*/
+@theme {
+  --color-ink: #17191c;
+  --color-ink-soft: #4a4f57;
+  --color-ink-faint: #868b94;
+  --color-line: #e6e7ea;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f3f4f5;
+  --color-brand: #0e5c4a;
+  --color-brand-strong: #0a4637;
+  --color-sale: #e0312b;
+
+  --color-grade-new: #12805c;
+  --color-grade-return: #2459c7;
+  --color-grade-opened: #0f7fa3;
+  --color-grade-refurb: #7a3fc4;
+  --color-grade-used: #b26a00;
+  --color-grade-display: #5b6270;
+
+  --font-sans: var(--font-plex-kr), "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  word-break: keep-all;
+}

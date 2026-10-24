@@ -1,0 +1,328 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>쇼핑몰 창업 체크북</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: 송장 라벨 같은 헤더 + 데스크톱 좌측 목차 / 본문 한 열, 모바일은 상단 가로 목차 */
+:root {
+  --bg: #f5f6f4;
+  --surface: #ffffff;
+  --ink: #1d2422;
+  --muted: #5d6763;
+  --line: #dcdfdb;
+  --kraft: #a8743a;
+  --kraft-soft: #f3e7d6;
+  --must: #b4372f;
+  --must-soft: #f8e3e1;
+  --warn: #9a6a00;
+  --warn-soft: #fbefcf;
+  --later: #2f6a8a;
+  --later-soft: #dfeef6;
+  --ok: #2f7a4f;
+  --ok-soft: #e0f1e6;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151a19; --surface: #1d2422; --ink: #e8ecea; --muted: #9aa5a0; --line: #313a37;
+    --kraft: #d6a066; --kraft-soft: #3a2d1f;
+    --must: #f08a80; --must-soft: #3d2220; --warn: #e8c063; --warn-soft: #3a3019;
+    --later: #86c2e2; --later-soft: #1c3240; --ok: #7fd1a0; --ok-soft: #1b3326;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #151a19; --surface: #1d2422; --ink: #e8ecea; --muted: #9aa5a0; --line: #313a37;
+  --kraft: #d6a066; --kraft-soft: #3a2d1f;
+  --must: #f08a80; --must-soft: #3d2220; --warn: #e8c063; --warn-soft: #3a3019;
+  --later: #86c2e2; --later-soft: #1c3240; --ok: #7fd1a0; --ok-soft: #1b3326;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 15.5px; line-height: 1.7;
+  word-break: keep-all; overflow-wrap: break-word;
+}
+.wrap {
+  max-width: 1120px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+}
+h1, h2, h3 { text-wrap: balance; line-height: 1.35; margin: 0; }
+p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--kraft); outline-offset: 2px; }
+
+/* 헤더: 송장 라벨 */
+.label {
+  background: var(--surface); border: 1.5px dashed var(--kraft);
+  border-radius: 6px; padding: 22px 24px;
+  display: grid; grid-template-columns: 1fr auto; gap: 16px 32px; align-items: end;
+}
+.label .eyebrow {
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: .12em;
+  color: var(--kraft); text-transform: uppercase;
+}
+.label h1 { font-size: clamp(24px, 4vw, 34px); font-weight: 700; margin-top: 4px; }
+.label .lead { color: var(--muted); margin-top: 8px; max-width: 62ch; }
+.barcode { text-align: center; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.barcode .bars {
+  height: 52px; width: 180px; margin-bottom: 4px;
+  background: repeating-linear-gradient(90deg,
+    var(--ink) 0 2px, transparent 2px 4px, var(--ink) 4px 5px, transparent 5px 8px,
+    var(--ink) 8px 11px, transparent 11px 12px, var(--ink) 12px 13px, transparent 13px 16px);
+}
+.notice {
+  margin-top: 16px; padding: 12px 16px; border-radius: 6px;
+  background: var(--warn-soft); color: var(--ink); font-size: 14px;
+}
+.notice b { color: var(--warn); }
+
+/* 본문 그리드 */
+.layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 40px; margin-top: 32px; }
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: s; }
+nav.toc a {
+  display: block; padding: 6px 10px; border-radius: 5px; text-decoration: none;
+  color: var(--muted); font-size: 14px;
+}
+nav.toc a:hover { background: var(--surface); color: var(--ink); }
+nav.toc a .n { font-family: var(--font-mono); color: var(--kraft); margin-right: 8px; font-size: 12px; }
+
+main { display: grid; gap: 48px; min-width: 0; }
+section { scroll-margin-top: 20px; min-width: 0; }
+.sec-head { display: flex; align-items: baseline; gap: 12px; border-bottom: 2px solid var(--ink); padding-bottom: 8px; margin-bottom: 18px; }
+.sec-head .n { font-family: var(--font-mono); color: var(--kraft); font-size: 14px; }
+.sec-head h2 { font-size: 22px; font-weight: 700; }
+.intro { color: var(--muted); margin-bottom: 16px; max-width: 70ch; }
+h3 { font-size: 17px; font-weight: 600; margin: 24px 0 10px; }
+
+/* 칩 */
+.chip {
+  display: inline-block; font-size: 12px; font-weight: 600; line-height: 1;
+  padding: 5px 8px; border-radius: 999px; white-space: nowrap; vertical-align: 2px;
+}
+.chip.must { background: var(--must-soft); color: var(--must); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.later { background: var(--later-soft); color: var(--later); }
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+
+/* 표 */
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14.5px; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+th { font-size: 12.5px; color: var(--muted); font-weight: 600; letter-spacing: .03em; background: var(--bg); }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 600; white-space: nowrap; }
+
+/* 항목 리스트 */
+.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+.items li { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 12px; padding: 13px 16px; border-bottom: 1px solid var(--line); }
+.items li:last-child { border-bottom: 0; }
+.items li .chip { justify-self: start; margin-top: 3px; }
+.items strong { font-weight: 600; }
+
+/* 강조 박스 */
+.callout {
+  margin-top: 18px; padding: 18px 20px; border-radius: 6px;
+  background: var(--must-soft); border-left: 4px solid var(--must);
+}
+.callout h3 { margin: 0 0 6px; color: var(--must); font-size: 16px; }
+.callout ul { margin: 8px 0 0; padding-left: 20px; }
+.tip { margin-top: 18px; padding: 14px 18px; border-radius: 6px; background: var(--kraft-soft); font-size: 14.5px; }
+.tip b { color: var(--kraft); }
+
+/* 단계 로드맵 */
+.roadmap { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.roadmap li {
+  display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 16px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px;
+}
+.roadmap .stage { font-family: var(--font-mono); font-size: 13px; color: var(--kraft); padding-top: 2px; }
+.roadmap h4 { margin: 0 0 4px; font-size: 16px; }
+.roadmap p { color: var(--muted); font-size: 14.5px; }
+
+/* 다음 단계 */
+.next { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.next div { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; }
+.next .k { font-family: var(--font-mono); color: var(--kraft); font-size: 13px; }
+.next h4 { margin: 4px 0 4px; font-size: 15.5px; }
+.next p { color: var(--muted); font-size: 14px; }
+
+footer { margin-top: 56px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 16px; }
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  nav.toc { position: static; overflow-x: auto; }
+  nav.toc ol { display: flex; gap: 6px; padding-bottom: 4px; }
+  nav.toc a { white-space: nowrap; background: var(--surface); border: 1px solid var(--line); }
+  .next { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .label { grid-template-columns: minmax(0, 1fr); }
+  .barcode { text-align: left; }
+  .items li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .roadmap li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+}
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap">
+  <header class="label">
+    <div>
+      <div class="eyebrow">재고·반품 상품 판매 · 온라인 + 오프라인 · 오픈마켓 확장</div>
+      <h1>종합 쇼핑몰 만들기 전에 알아야 할 것</h1>
+      <p class="lead">행정 신고, 반품 상품 표기, 네이버페이·카카오페이 결제, 판매대금 정산, 개인정보 보안, 택배·송장 연동까지 처음 준비할 때 짚어야 할 내용을 정리했습니다.</p>
+    </div>
+    <div class="barcode" aria-hidden="true">
+      <div class="bars"></div>
+      CHECK · 2026-10-24
+    </div>
+  </header>
+
+  <p class="notice"><b>확인 필요</b> 2026년 기준 일반 정보입니다. 금액과 대상 기준은 자주 바뀌므로 실제로 진행할 때는 세무사와 관할 구청에 확인하세요.</p>
+
+  <div class="layout">
+    <nav class="toc" aria-label="목차">
+      <ol>
+        <li><a href="#admin"><span class="n">1</span>행정 절차</a></li>
+        <li><a href="#goods"><span class="n">2</span>반품·재고 상품</a></li>
+        <li><a href="#pay"><span class="n">3</span>결제와 정산</a></li>
+        <li><a href="#security"><span class="n">4</span>보안·개인정보</a></li>
+        <li><a href="#ship"><span class="n">5</span>택배·송장</a></li>
+        <li><a href="#offline"><span class="n">6</span>오프라인·재고</a></li>
+        <li><a href="#roadmap"><span class="n">7</span>추천 순서</a></li>
+        <li><a href="#next"><span class="n">→</span>다음 단계</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="admin">
+        <div class="sec-head"><span class="n">01</span><h2>행정 절차</h2></div>
+        <p class="intro">쇼핑몰을 열기 전에 반드시 해야 하는 신고입니다. 순서대로 진행하면 됩니다.</p>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>항목</th><th>내용</th><th>시점</th></tr></thead>
+            <tbody>
+              <tr><td>사업자등록</td><td>세무서 또는 홈택스. 업종은 "전자상거래 소매업"에 오프라인 소매업 추가</td><td><span class="chip must">가장 먼저</span></td></tr>
+              <tr><td>통신판매업 신고</td><td>구청 또는 정부24. <b>구매안전서비스 이용확인증</b>이 필요하고, PG사나 은행 에스크로에서 발급받음</td><td><span class="chip must">오픈 전</span></td></tr>
+              <tr><td>현금영수증 가맹점</td><td>통신판매업이 의무 가입 대상인지 확인</td><td><span class="chip warn">오픈 전후</span></td></tr>
+              <tr><td>부가통신사업 신고</td><td>자본금 1억 원 이하의 소규모 사업자는 보통 면제</td><td><span class="chip later">확장 시 재확인</span></td></tr>
+              <tr><td>통신판매중개업</td><td>다른 판매자를 받는 순간 "중개자"가 됨. 중개자임을 고지하고, 판매자 신원정보를 제공하고, 분쟁 처리 책임을 짐</td><td><span class="chip later">판매자 모집 시</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="tip"><b>사이트 하단 필수 표기</b> 상호, 대표자, 사업자등록번호, 통신판매업 신고번호, 주소, 연락처, 개인정보관리책임자</p>
+      </section>
+
+      <section id="goods">
+        <div class="sec-head"><span class="n">02</span><h2>반품·재고 상품이라서 주의할 점</h2></div>
+        <ul class="items">
+          <li><span class="chip must">필수</span><div><strong>상품 상태 표기</strong>: 새상품 / 반품(미개봉·개봉) / 리퍼 / 중고 / 전시상품을 정확히 구분해야 합니다. 상태를 숨기면 표시광고법 위반이 되고 분쟁이 생깁니다. 상품마다 상태 등급과 실물 사진을 다는 기능을 DB 설계 단계부터 넣으세요.</div></li>
+          <li><span class="chip must">필수</span><div><strong>상품정보제공고시</strong>: 카테고리별로 반드시 표기해야 하는 항목이 정해져 있습니다(제조사, 원산지, AS 등).</div></li>
+          <li><span class="chip must">필수</span><div><strong>KC 인증</strong>: 전기용품이나 어린이제품은 재판매할 때도 KC 표시가 필요합니다. 인증 없는 물건을 매입하면 팔 수 없습니다.</div></li>
+          <li><span class="chip warn">신고</span><div><strong>별도 신고 품목</strong>: 건강기능식품(판매업 신고), 일부 의료기기(판매업 신고), 화장품 소분 판매 등</div></li>
+          <li><span class="chip must">금지</span><div><strong>온라인 판매 금지</strong>: 주류(전통주 일부 제외), 담배, 의약품, 콘택트렌즈 등</div></li>
+          <li><span class="chip warn">주의</span><div><strong>상표권·가품</strong>: 브랜드 재고를 매입하면 정품 증빙(매입 거래명세서)을 꼭 보관하세요. 가품 신고가 들어오면 이 증빙으로 대응해야 합니다.</div></li>
+          <li><span class="chip warn">주의</span><div><strong>매입 증빙(세금)</strong>: 폐업 재고나 개인 매입은 세금계산서가 없는 경우가 많습니다. 원가로 인정받지 못하면 세금이 크게 나올 수 있으니 계좌이체 기록과 매입계약서를 반드시 남기세요. 시스템에 매입처·매입증빙 첨부 기능을 두면 좋습니다.</div></li>
+          <li><span class="chip must">필수</span><div><strong>청약철회(7일 환불)</strong>: 반품 상품이라도 소비자의 7일 내 환불 권리는 원칙적으로 유지됩니다. "단순변심 환불 불가" 같은 문구는 법적으로 무효입니다.</div></li>
+        </ul>
+      </section>
+
+      <section id="pay">
+        <div class="sec-head"><span class="n">03</span><h2>결제: 네이버페이·카카오페이의 현실</h2></div>
+        <p class="intro">간편결제만 따로 붙이는 게 아니라, 보통 <b>PG사 계약 하나에 간편결제를 함께 붙입니다.</b> PG사로는 토스페이먼츠, KG이니시스, NHN KCP, 나이스페이 등이 있습니다. 자체 개발이라면 여러 PG와 간편결제를 하나의 코드로 붙이는 포트원(PortOne) 같은 결제 통합 API를 추천합니다.</p>
+        <h3>간편결제를 쓸 때 문제점</h3>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>문제</th><th>설명</th></tr></thead>
+            <tbody>
+              <tr><td>심사</td><td>사업자등록과 통신판매업 신고가 끝나야 하고, 사이트가 거의 완성된 상태여야 합니다(상품, 약관, 환불정책, 사업자정보 표기). 개발 중인 사이트는 반려됩니다.</td></tr>
+              <tr><td>네이버페이 방식</td><td><b>주문형</b>은 네이버가 주문을 관리하고 네이버쇼핑 노출에 유리하지만, 주문 데이터가 네이버 쪽에 있어 연동이 복잡합니다. <b>결제형</b>은 결제만 하고 주문은 내 시스템이 관리합니다. 자체 판매관리 시스템을 만들 거라면 <b>결제형</b>이 맞습니다.</td></tr>
+              <tr><td>수수료</td><td>카드나 간편결제 모두 대략 2~3.5%대. 영세·중소 여부에 따라 다릅니다.</td></tr>
+              <tr><td>정산 주기</td><td>D+1에서 D+7 정도라서 현금 흐름에 영향이 있습니다.</td></tr>
+              <tr><td>취소·부분취소</td><td>반품이나 부분 환불을 API로 정확히 구현해야 합니다. 버그가 가장 많이 나는 부분입니다.</td></tr>
+              <tr><td>카드정보 저장</td><td>카드번호를 직접 저장하면 안 되고, PG의 빌링키를 사용해야 합니다.</td></tr>
+              <tr><td>금액 위변조</td><td>결제 금액은 반드시 서버에서 재검증해야 합니다. 브라우저에서 금액을 조작하는 공격이 흔합니다.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout">
+          <h3>오픈마켓으로 갈 때 가장 큰 함정: 판매대금 정산</h3>
+          <p>고객 돈을 내 회사 통장으로 받은 뒤 판매자에게 나눠주는 구조는 전자금융거래법상 <b>전자지급결제대행업(PG업) 등록</b>이 필요할 수 있습니다. 이 등록은 자본금 요건이 커서 중소 사업자에게는 사실상 어렵습니다.</p>
+          <ul>
+            <li><b>해결책</b>: PG사의 정산대행(지급대행, 하위몰, 파트너 정산) 서비스를 쓰면 PG가 판매자에게 직접 나눠서 정산해 줍니다. 토스페이먼츠 지급대행, 포트원 파트너정산 등이 있습니다.</li>
+            <li>티메프 사태 이후 판매대금 정산 기한과 별도 관리 의무가 강화되었습니다. 일정 규모 이상 플랫폼부터 적용되지만 처음부터 그 구조로 설계하는 게 안전합니다.</li>
+            <li>중개자는 판매자별 매출자료를 국세청에 제출할 의무가 있습니다. 판매자별 매출 리포트 기능이 필요합니다.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="security">
+        <div class="sec-head"><span class="n">04</span><h2>보안·개인정보</h2></div>
+        <p class="intro"><b>지금 단계에서 받아야 하는 인증은 없습니다.</b> ISMS-P 같은 인증은 매출이나 이용자 수가 큰 기업이 대상입니다. 대신 개인정보보호법의 기술적 조치는 규모와 상관없이 의무이고, 유출되면 과징금이 큽니다.</p>
+        <ul class="items">
+          <li><span class="chip must">필수</span><div><strong>HTTPS</strong> 전 구간 적용</div></li>
+          <li><span class="chip must">필수</span><div><strong>비밀번호</strong>는 bcrypt 같은 일방향 해시로 저장. 계좌번호 같은 민감정보는 암호화 저장</div></li>
+          <li><span class="chip must">금지</span><div><strong>주민등록번호 수집 금지</strong>. 본인인증이 필요하면 PASS나 휴대폰 인증 서비스 이용</div></li>
+          <li><span class="chip must">필수</span><div><strong>관리자 페이지</strong>: 2단계 인증, 가능하면 IP 제한, 직원별 권한 분리</div></li>
+          <li><span class="chip must">필수</span><div><strong>접속기록 보관</strong>: 관리자가 언제 어떤 고객정보를 봤는지 최소 1년 이상 보관</div></li>
+          <li><span class="chip must">필수</span><div><strong>개인정보처리방침·이용약관 게시</strong>(공정위 표준약관 참고). 마케팅 수신 동의는 따로 받기</div></li>
+          <li><span class="chip warn">주의</span><div><strong>만 14세 미만</strong> 가입은 법정대리인 동의가 필요해서 보통 가입을 막습니다</div></li>
+          <li><span class="chip warn">주의</span><div><strong>파기와 보관</strong>: 탈퇴하거나 목적을 달성한 개인정보는 파기. 단, 전자상거래법상 거래기록은 5년 보관</div></li>
+          <li><span class="chip later">규모 커지면</span><div><strong>개인정보 손해배상책임 보험</strong>: 일정 규모(매출, 이용자 수) 이상이면 가입 의무</div></li>
+        </ul>
+      </section>
+
+      <section id="ship">
+        <div class="sec-head"><span class="n">05</span><h2>택배·송장·바코드</h2></div>
+        <ul class="items">
+          <li><span class="chip ok">계약</span><div><strong>택배사 계약</strong>: CJ대한통운, 한진, 롯데, 우체국 등. 월 물량이 많을수록 단가가 내려갑니다. 초기에는 영업소나 대리점과 계약하는 경우가 많습니다.</div></li>
+          <li><span class="chip ok">연동</span><div><strong>송장 출력</strong>: 택배사마다 송장 양식과 API가 다르고, 계약을 해야 API를 열어줍니다. 여러 택배사를 쓸 거라면 굿스플로 같은 통합 송장 서비스를 연동하는 편이 개발 부담이 훨씬 적습니다.</div></li>
+          <li><span class="chip ok">연동</span><div><strong>배송 추적</strong>: 스마트택배(스윗트래커) 같은 통합 추적 API를 쓰면 택배사를 하나하나 붙일 필요가 없습니다.</div></li>
+          <li><span class="chip warn">확인</span><div><strong>바코드 프린터</strong>: 감열 라벨 프린터(빅솔론, 세우, 제브라 등). 택배사가 지정한 송장 규격과 프린터 호환 여부를 먼저 확인하세요. 재고용 상품 바코드 라벨도 같은 프린터로 뽑을 수 있습니다.</div></li>
+          <li><span class="chip ok">연동</span><div><strong>반품 회수</strong>도 택배사 API로 접수할 수 있습니다. 반품 상품을 다루는 사업이라 이 흐름이 중요합니다.</div></li>
+        </ul>
+      </section>
+
+      <section id="offline">
+        <div class="sec-head"><span class="n">06</span><h2>오프라인 판매와 재고 통합</h2></div>
+        <ul class="items">
+          <li><span class="chip must">핵심</span><div>매장에서는 카드단말기(VAN사)나 POS를 씁니다. 핵심은 <strong>온라인과 오프라인 재고를 하나의 DB로 관리하는 것</strong>입니다. 그래야 매장에서 팔린 상품이 온라인에서도 바로 품절 처리됩니다.</div></li>
+          <li><span class="chip warn">설계</span><div>반품·재고 상품은 같은 상품이라도 상태가 제각각인 경우가 많습니다. 그래서 <strong>개체별(낱개 단위) 바코드 관리</strong>가 유리합니다.</div></li>
+        </ul>
+      </section>
+
+      <section id="roadmap">
+        <div class="sec-head"><span class="n">07</span><h2>추천 순서</h2></div>
+        <p class="intro">모든 기능을 한 번에 만들면 1년이 넘게 걸리고 실패 위험이 큽니다. 단계로 나누어 진행하는 걸 추천합니다.</p>
+        <ol class="roadmap">
+          <li><span class="stage">0단계</span><div><h4>행정 (지금 바로)</h4><p>사업자등록 → PG 신청(에스크로 확인증 발급) → 통신판매업 신고 → 택배사 계약</p></div></li>
+          <li><span class="stage">1단계</span><div><h4>내 쇼핑몰</h4><p>PC와 모바일 반응형 쇼핑몰, 회원, 상품(상태 등급 포함), 장바구니, 결제(PG + 네이버페이·카카오페이 결제형), 주문·취소·반품</p></div></li>
+          <li><span class="stage">2단계</span><div><h4>판매관리</h4><p>재고관리(바코드), 송장 출력, 배송추적, 택배사 관리, 매입 관리, 오프라인 판매 연동</p></div></li>
+          <li><span class="stage">3단계</span><div><h4>오픈마켓</h4><p>판매자 입점·심사, 판매자 전용 관리자 화면, 수수료와 PG 정산대행 연동, 판매자별 매출 리포트</p></div></li>
+          <li><span class="stage">추가</span><div><h4>외부 마켓 연동</h4><p>네이버 스마트스토어나 쿠팡에도 동시에 판매하고, 그 주문을 내 판매관리 시스템으로 모아오는 기능</p></div></li>
+        </ol>
+        <p class="tip"><b>설계 팁</b> 1단계를 만들 때부터 "판매자(seller)" 개념을 DB에 넣어두세요. 처음에는 판매자가 "나" 한 명뿐이어도, 나중에 오픈마켓으로 바꿀 때 전체를 다시 만들 필요가 없어집니다.</p>
+      </section>
+
+      <section id="next">
+        <div class="sec-head"><span class="n">→</span><h2>다음 단계</h2></div>
+        <div class="next">
+          <div><span class="k">A</span><h4>시스템 구조 설계</h4><p>기술 스택과 전체 시스템 구조, DB 설계 제안</p></div>
+          <div><span class="k">B</span><h4>쇼핑몰 기능·화면</h4><p>1단계 쇼핑몰 기능 목록과 화면 설계</p></div>
+          <div><span class="k">C</span><h4>자체 개발 vs 솔루션</h4><p>카페24·고도몰 같은 솔루션과 비용·기간 비교</p></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer>법령과 기준은 바뀔 수 있습니다. 세무사, 관할 구청, PG사에 최종 확인하세요.</footer>
+</div>
+
+</body></html>
