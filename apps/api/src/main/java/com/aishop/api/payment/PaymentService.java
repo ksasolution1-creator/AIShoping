@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,7 @@ import com.aishop.api.inventory.InventoryRepository;
 import com.aishop.api.jooq.tables.records.OrderItemsRecord;
 import com.aishop.api.jooq.tables.records.OrdersRecord;
 import com.aishop.api.jooq.tables.records.PaymentsRecord;
+import com.aishop.api.notification.OrderEvents.DepositConfirmed;
 import com.aishop.api.order.OrderRepository;
 import com.aishop.api.order.OrderService;
 import com.aishop.api.payment.TossPaymentsClient.TossApiException;
@@ -36,13 +38,15 @@ public class PaymentService {
 	private final InventoryRepository inventory;
 	private final TossPaymentsClient toss;
 	private final Refunder refunder;
+	private final ApplicationEventPublisher events;
 
 	public PaymentService(OrderRepository orders, InventoryRepository inventory, TossPaymentsClient toss,
-			Refunder refunder) {
+			Refunder refunder, ApplicationEventPublisher events) {
 		this.orders = orders;
 		this.inventory = inventory;
 		this.toss = toss;
 		this.refunder = refunder;
+		this.events = events;
 	}
 
 	/** 승인 결과. success가 false면 code·message로 화면에 안내한다 */
@@ -149,6 +153,7 @@ public class PaymentService {
 		}
 		orders.insertBankPayment(order.getId(), order.getPayAmount());
 		completePayment(order);
+		events.publishEvent(new DepositConfirmed(orderNo));
 	}
 
 	/** 운영자가 무통장입금 환불을 고객 계좌로 직접 보낸 뒤 송금 완료로 표시한다 */

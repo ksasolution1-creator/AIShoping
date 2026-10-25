@@ -195,6 +195,11 @@ public class Orders extends TableImpl<OrdersRecord> {
      */
     public final TableField<OrdersRecord, OffsetDateTime> DEPOSIT_DUE_AT = createField(DSL.name("deposit_due_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
 
+    /**
+     * The column <code>public.orders.deposit_reminded_at</code>.
+     */
+    public final TableField<OrdersRecord, OffsetDateTime> DEPOSIT_REMINDED_AT = createField(DSL.name("deposit_reminded_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
+
     private Orders(Name alias, Table<OrdersRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

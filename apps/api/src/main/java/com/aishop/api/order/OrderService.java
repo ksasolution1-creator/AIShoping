@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import com.aishop.api.common.web.PageResponse;
 import com.aishop.api.inventory.InventoryRepository;
 import com.aishop.api.jooq.tables.records.OrderItemsRecord;
 import com.aishop.api.jooq.tables.records.OrdersRecord;
+import com.aishop.api.notification.OrderEvents.BankOrderPlaced;
 import com.aishop.api.order.OrderRepository.CarrierOption;
 import com.aishop.api.order.OrderViews.BankDeposit;
 import com.aishop.api.order.OrderViews.CheckoutInfo;
@@ -60,11 +62,12 @@ public class OrderService {
 	private final WholesalePricing wholesale;
 	private final BusinessRepository business;
 	private final BankAccount bank;
+	private final ApplicationEventPublisher events;
 	private final SecureRandom random = new SecureRandom();
 
 	public OrderService(OrderRepository orders, PurchaseLineRepository purchaseLines, InventoryRepository inventory,
 			FieldCipher cipher, TossPaymentsClient toss, ClaimService claimService, WholesalePricing wholesale,
-			BusinessRepository business, BankAccount bank) {
+			BusinessRepository business, BankAccount bank, ApplicationEventPublisher events) {
 		this.orders = orders;
 		this.purchaseLines = purchaseLines;
 		this.inventory = inventory;
@@ -74,6 +77,7 @@ public class OrderService {
 		this.wholesale = wholesale;
 		this.business = business;
 		this.bank = bank;
+		this.events = events;
 	}
 
 	// ------------------------------------------------------------------
@@ -160,6 +164,7 @@ public class OrderService {
 		if (request.bankTransfer()) {
 			// 주문이 끝났으니 입금 전이라도 장바구니에서 뺀다 (카드는 결제 승인 때 뺀다)
 			orders.deleteCartItems(user.id(), lines.stream().map(PurchaseLine::skuId).toList());
+			events.publishEvent(new BankOrderPlaced(orderNo));
 		}
 
 		return new CheckoutInfo(orderNo, orderName(lines.getFirst().productName(), lines.size()), summary.payAmount(),

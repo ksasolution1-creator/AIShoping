@@ -50,6 +50,7 @@ docker compose logs -f caddy  # 인증서 발급 확인 (certificate obtained)
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD`: 최초 관리자 (10자 이상). 계정이 만들어진 뒤에는 지워도 된다.
 - `TOSS_CLIENT_KEY`, `TOSS_SECRET_KEY`: 테스트 서버는 토스 테스트 키. 카드 결제는 `CARD_PAYMENT_ENABLED=true`일 때만 열린다
 - `BANK_*`: 무통장입금 계좌와 입금 기한. 비우면 기본값(기업은행 회사 계좌, 48시간)을 쓴다
+- `MAIL_*`: 알림 메일 SMTP. 비우면 메일 없이 동작한다. 운영자 알림은 `NOTIFY_ADMIN_EMAIL`(기본 kmh@ksas.co.kr)로 간다
 
 ### 간편로그인 (카카오·네이버)
 

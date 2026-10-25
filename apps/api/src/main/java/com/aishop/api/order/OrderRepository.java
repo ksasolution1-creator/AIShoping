@@ -245,6 +245,28 @@ public class OrderRepository {
 			.fetch(ORDERS.ORDER_NO);
 	}
 
+	/**
+	 * 입금 기한이 within 안으로 다가온 무통장입금 대기 주문을 알림 보냄으로 표시하고 돌려준다.
+	 * 한 주문은 한 번만 돌려준다 (다른 서버가 처리 중인 행은 건너뜀).
+	 */
+	public List<OrdersRecord> claimDepositReminders(Duration within, int limit) {
+		OffsetDateTime now = OffsetDateTime.now();
+		return dsl.update(ORDERS)
+			.set(ORDERS.DEPOSIT_REMINDED_AT, now)
+			.where(ORDERS.ID.in(select(ORDERS.ID)
+				.from(ORDERS)
+				.where(ORDERS.STATUS.eq("PENDING_PAYMENT"), ORDERS.PAY_METHOD.eq(Refunder.BANK_TRANSFER),
+						ORDERS.DEPOSIT_REMINDED_AT.isNull(), ORDERS.DEPOSIT_DUE_AT.gt(now),
+						ORDERS.DEPOSIT_DUE_AT.lt(now.plus(within)))
+				.orderBy(ORDERS.DEPOSIT_DUE_AT)
+				.limit(limit)
+				.forUpdate()
+				.skipLocked()))
+			.returning()
+			.fetch()
+			.sortAsc(ORDERS.DEPOSIT_DUE_AT);
+	}
+
 	// ------------------------------------------------------------------
 	// 상태 변경
 	// ------------------------------------------------------------------

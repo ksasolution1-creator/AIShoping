@@ -410,6 +410,21 @@ public class OrdersRecord extends UpdatableRecordImpl<OrdersRecord> {
         return (OffsetDateTime) get(25);
     }
 
+    /**
+     * Setter for <code>public.orders.deposit_reminded_at</code>.
+     */
+    public OrdersRecord setDepositRemindedAt(OffsetDateTime value) {
+        set(26, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.orders.deposit_reminded_at</code>.
+     */
+    public OffsetDateTime getDepositRemindedAt() {
+        return (OffsetDateTime) get(26);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -433,7 +448,7 @@ public class OrdersRecord extends UpdatableRecordImpl<OrdersRecord> {
     /**
      * Create a detached, initialised OrdersRecord
      */
-    public OrdersRecord(Long id, String orderNo, String channel, String externalOrderId, Long userId, String ordererName, String ordererPhoneEnc, String ordererEmail, String receiverName, String receiverPhoneEnc, String receiverZipcode, String receiverAddress1Enc, String receiverAddress2Enc, String deliveryMemo, Long itemsTotal, Long shippingFee, Long discountTotal, Long payAmount, String status, OffsetDateTime orderedAt, OffsetDateTime paidAt, OffsetDateTime createdAt, OffsetDateTime updatedAt, String payMethod, String depositorName, OffsetDateTime depositDueAt) {
+    public OrdersRecord(Long id, String orderNo, String channel, String externalOrderId, Long userId, String ordererName, String ordererPhoneEnc, String ordererEmail, String receiverName, String receiverPhoneEnc, String receiverZipcode, String receiverAddress1Enc, String receiverAddress2Enc, String deliveryMemo, Long itemsTotal, Long shippingFee, Long discountTotal, Long payAmount, String status, OffsetDateTime orderedAt, OffsetDateTime paidAt, OffsetDateTime createdAt, OffsetDateTime updatedAt, String payMethod, String depositorName, OffsetDateTime depositDueAt, OffsetDateTime depositRemindedAt) {
         super(Orders.ORDERS);
 
         setId(id);
@@ -462,6 +477,7 @@ public class OrdersRecord extends UpdatableRecordImpl<OrdersRecord> {
         setPayMethod(payMethod);
         setDepositorName(depositorName);
         setDepositDueAt(depositDueAt);
+        setDepositRemindedAt(depositRemindedAt);
         resetTouchedOnNotNull();
     }
 }
