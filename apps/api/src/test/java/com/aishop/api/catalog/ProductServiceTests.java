@@ -113,7 +113,7 @@ class ProductServiceTests {
 	}
 
 	@Test
-	void gradeCanBeChangedAfterRegistration() {
+	void gradeAndPriceCanBeChangedAfterRegistration() {
 		String name = "등급 변경 " + uniq();
 		long productId = createProduct(name, null, sku(ConditionGrade.NEW, 30_000L, 1));
 		long skuId = productService.getAdminProduct(SELLER, productId).skus().getFirst().id();
@@ -133,9 +133,44 @@ class ProductServiceTests {
 			.items().stream().filter(r -> r.id() == productId).findFirst().orElseThrow();
 		assertThat(row.skus()).extracting(s -> s.grade().code()).containsExactly(ConditionGrade.USED_A);
 
+		// 목록: 판매가만 바로 변경
+		productService.changeSkuPrice(SELLER, skuId, 25_000L);
+		assertThat(productService.getAdminProduct(SELLER, productId).skus().getFirst().price()).isEqualTo(25_000L);
+		assertThatThrownBy(() -> productService.changeSkuPrice(OTHER_SELLER, skuId, 1L))
+			.isInstanceOf(ApiException.class);
+
 		// 다른 판매자의 SKU는 바꿀 수 없다
 		assertThatThrownBy(() -> productService.changeSkuGrade(OTHER_SELLER, skuId, ConditionGrade.NEW))
 			.isInstanceOf(ApiException.class);
+	}
+
+	@Test
+	void deleteProductAndSkuWithGuards() {
+		long productId = createProduct("삭제 테스트 " + uniq(), null,
+				sku(ConditionGrade.NEW, 10_000L, 2), sku(ConditionGrade.USED_A, 8_000L, 1));
+		List<CatalogViews.AdminSku> skus = productService.getAdminProduct(SELLER, productId).skus();
+		long first = skus.get(0).id();
+		long second = skus.get(1).id();
+
+		// 주문이 잡아 둔 재고가 있으면 SKU도 상품도 지울 수 없다
+		inventory.reserve(first, WAREHOUSE, 1);
+		assertThatThrownBy(() -> productService.deleteSku(SELLER, first))
+			.isInstanceOf(ApiException.class).extracting("code").isEqualTo("HAS_OPEN_ORDERS");
+		assertThatThrownBy(() -> productService.deleteProduct(SELLER, productId))
+			.isInstanceOf(ApiException.class).extracting("code").isEqualTo("HAS_OPEN_ORDERS");
+		inventory.release(first, WAREHOUSE, 1);
+
+		// SKU 하나 삭제 → 마지막 SKU는 지울 수 없음 → 상품 삭제
+		productService.deleteSku(SELLER, second);
+		assertThat(productService.getAdminProduct(SELLER, productId).skus()).extracting(CatalogViews.AdminSku::id)
+			.containsExactly(first);
+		assertThatThrownBy(() -> productService.deleteSku(SELLER, first))
+			.isInstanceOf(ApiException.class).extracting("code").isEqualTo("LAST_SKU");
+		assertThatThrownBy(() -> productService.deleteProduct(OTHER_SELLER, productId))
+			.isInstanceOf(ApiException.class);
+		productService.deleteProduct(SELLER, productId);
+		assertThatThrownBy(() -> productService.getAdminProduct(SELLER, productId))
+			.isInstanceOf(ApiException.class).extracting("code").isEqualTo("NOT_FOUND");
 	}
 
 	@Test

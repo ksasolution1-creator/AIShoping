@@ -3,12 +3,24 @@
 import { useEffect, useState } from "react";
 
 import { WhaleLoader } from "@/components/brand/WhaleLoader";
+import { ConfirmButton } from "@/components/ConfirmButton";
 import { ApiError, inventoryApi, type Supplier, type SupplierForm } from "@/lib/api";
 
 export function SupplierManager() {
   const [suppliers, setSuppliers] = useState<Supplier[] | null>(null);
   const [editing, setEditing] = useState<number | "new" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+
+  async function remove(s: Supplier) {
+    try {
+      await inventoryApi.deleteSupplier(s.id);
+      setNotice({ kind: "ok", text: `'${s.name}' 매입처를 삭제했습니다.` });
+      load();
+    } catch (e) {
+      setNotice({ kind: "error", text: e instanceof ApiError ? e.message : "삭제하지 못했습니다." });
+    }
+  }
 
   function load() {
     inventoryApi
@@ -29,6 +41,14 @@ export function SupplierManager() {
           매입처 추가
         </button>
       </div>
+      {notice && (
+        <p
+          role="status"
+          className={`rounded p-3 text-sm ${notice.kind === "ok" ? "bg-ok/10 text-ok" : "bg-danger/10 text-danger"}`}
+        >
+          {notice.text}
+        </p>
+      )}
       {editing === "new" && (
         <SupplierEditor
           initial={null}
@@ -66,6 +86,7 @@ export function SupplierManager() {
               <button type="button" className="btn-outline h-8" onClick={() => setEditing(s.id)}>
                 수정
               </button>
+              <ConfirmButton className="btn-outline h-8 text-danger" onConfirm={() => remove(s)} />
             </li>
           ),
         )}

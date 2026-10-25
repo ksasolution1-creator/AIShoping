@@ -214,6 +214,15 @@ public class CommunityRepository {
 			.execute() == 1;
 	}
 
+	/** 판매자 상품의 문의만 지운다 (광고·욕설 등) */
+	public boolean deleteQuestion(long sellerId, long questionId) {
+		return dsl.deleteFrom(PRODUCT_QUESTIONS)
+			.where(PRODUCT_QUESTIONS.ID.eq(questionId))
+			.and(PRODUCT_QUESTIONS.PRODUCT_ID
+				.in(select(PRODUCTS.ID).from(PRODUCTS).where(PRODUCTS.SELLER_ID.eq(sellerId))))
+			.execute() == 1;
+	}
+
 	// ------------------------------------------------------------------
 	// 찜
 	// ------------------------------------------------------------------

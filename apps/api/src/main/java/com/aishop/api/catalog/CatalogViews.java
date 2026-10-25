@@ -95,11 +95,11 @@ public final class CatalogViews {
 			int onHand,
 			int reserved,
 			OffsetDateTime createdAt,
-			List<SkuGrade> skus) {
+			List<ListSku> skus) {
 	}
 
-	/** 목록에서 바로 바꾸는 SKU별 상태등급. optionText는 SKU가 여러 개일 때 구분용 (예: 색상=블랙) */
-	public record SkuGrade(long skuId, String optionText, Grade grade) {
+	/** 목록에서 바로 바꾸는 SKU별 상태등급·판매가. optionText는 SKU가 여러 개일 때 구분용 (예: 색상=블랙) */
+	public record ListSku(long skuId, String optionText, Grade grade, long price) {
 	}
 
 	public record AdminSku(

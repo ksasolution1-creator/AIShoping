@@ -66,6 +66,12 @@ public final class CatalogRequests {
 	public record ChangeGrade(@NotNull(message = "상태등급을 선택해 주세요.") ConditionGrade conditionGrade) {
 	}
 
+	public record DeleteProducts(@NotEmpty @Size(max = 100) List<Long> ids) {
+	}
+
+	public record ChangePrice(@NotNull(message = "판매가를 입력해 주세요.") @PositiveOrZero Long price) {
+	}
+
 	public record ChangeProductStatus(@NotNull ProductStatus status) {
 	}
 

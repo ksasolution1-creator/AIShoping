@@ -133,6 +133,18 @@ public class InventoryService {
 		purchases.updateSupplier(supplierId, form);
 	}
 
+	/** 매입처 삭제. 매입서에 쓰인 곳은 기록이 남아야 하므로 '거래 중지'로 바꾸도록 안내한다 */
+	@Transactional
+	public void deleteSupplier(long sellerId, long supplierId) {
+		if (!purchases.supplierBelongsTo(sellerId, supplierId)) {
+			throw ApiException.notFound("매입처");
+		}
+		if (purchases.supplierUsed(supplierId)) {
+			throw ApiException.conflict("SUPPLIER_USED", "매입 기록이 있는 매입처는 지울 수 없습니다. '거래 중지'로 바꿔 주세요.");
+		}
+		purchases.deleteSupplier(supplierId);
+	}
+
 	// ------------------------------------------------------------------
 	// 매입서: 작성(DRAFT) → 입고(RECEIVED) 시 재고가 늘어난다
 	// ------------------------------------------------------------------

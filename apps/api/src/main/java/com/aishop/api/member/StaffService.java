@@ -129,6 +129,34 @@ public class StaffService {
 		return list(actor);
 	}
 
+	/**
+	 * 운영자 계정 삭제. 이메일·비밀번호·이름을 지우고 탈퇴 상태로 바꾼다
+	 * (주문 처리·열람 기록이 이 계정을 가리키므로 행은 남긴다). 같은 이메일로 다시 추가할 수 있다.
+	 */
+	@Transactional
+	public List<Staff> delete(AuthUser actor, long userId, String ip) {
+		requireAdmin(actor);
+		UsersRecord user = lockStaff(userId);
+		if (userId == actor.id()) {
+			throw ApiException.badRequest("SELF_CHANGE", "내 계정은 삭제할 수 없습니다.");
+		}
+		if ("ACTIVE".equals(user.getStatus()) && roleOf(userId).equals("ADMIN") && activeAdminCount() <= 1) {
+			throw ApiException.badRequest("LAST_ADMIN", "관리자가 한 명은 남아 있어야 합니다.");
+		}
+		members.audit(actor.id(), "DELETE_STAFF", userId, Map.of("email", user.getEmail(), "name", user.getName()), ip);
+		dsl.deleteFrom(USER_ROLES).where(USER_ROLES.USER_ID.eq(userId)).execute();
+		dsl.update(USERS)
+			.set(USERS.EMAIL, (String) null)
+			.set(USERS.PASSWORD_HASH, (String) null)
+			.set(USERS.NAME, "삭제된 운영자")
+			.set(USERS.STATUS, "WITHDRAWN")
+			.set(USERS.WITHDRAWN_AT, OffsetDateTime.now())
+			.where(USERS.ID.eq(userId))
+			.execute();
+		revokeAfterCommit(userId);
+		return list(actor);
+	}
+
 	@Transactional
 	public void resetPassword(AuthUser actor, long userId, ResetPassword request, String ip) {
 		requireAdmin(actor);

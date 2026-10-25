@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,6 +50,11 @@ public class AdminStaffController {
 	public List<Staff> change(@PathVariable long userId, @Valid @RequestBody ChangeStaff body,
 			HttpServletRequest request) {
 		return service.change(admin.user(), userId, body, request.getRemoteAddr());
+	}
+
+	@DeleteMapping("/{userId}")
+	public List<Staff> delete(@PathVariable long userId, HttpServletRequest request) {
+		return service.delete(admin.user(), userId, request.getRemoteAddr());
 	}
 
 	@PostMapping("/{userId}/password")

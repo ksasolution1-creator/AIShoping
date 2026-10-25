@@ -166,6 +166,40 @@ public class ProductService {
 		products.updateSkuGrade(skuId, grade);
 	}
 
+	/** 상품 삭제. 아직 처리 중인 주문(입금 대기·출고 전)이 잡아 둔 재고가 있으면 막는다 */
+	@Transactional
+	public void deleteProduct(long sellerId, long productId) {
+		requireProduct(sellerId, productId);
+		int reserved = products.reservedOfProduct(productId);
+		if (reserved > 0) {
+			throw ApiException.conflict("HAS_OPEN_ORDERS",
+					"처리 중인 주문이 " + reserved + "개 잡혀 있어 삭제할 수 없습니다. 주문을 처리하거나 먼저 '숨김'으로 바꿔 주세요.");
+		}
+		products.softDeleteProduct(productId);
+	}
+
+	/** SKU 삭제. 상품에 SKU가 하나만 남으면 상품을 삭제하도록 안내한다 */
+	@Transactional
+	public void deleteSku(long sellerId, long skuId) {
+		long productId = products.findProductIdOfSku(sellerId, skuId).orElseThrow(() -> ApiException.notFound("SKU"));
+		if (products.countLiveSkus(productId) <= 1) {
+			throw ApiException.badRequest("LAST_SKU", "마지막 판매 단위는 지울 수 없습니다. 상품 자체를 삭제해 주세요.");
+		}
+		int reserved = products.reservedOfSku(skuId);
+		if (reserved > 0) {
+			throw ApiException.conflict("HAS_OPEN_ORDERS",
+					"처리 중인 주문이 " + reserved + "개 잡혀 있어 삭제할 수 없습니다. 먼저 판매를 '중지'로 바꿔 주세요.");
+		}
+		products.softDeleteSku(skuId);
+	}
+
+	/** 목록에서 판매가만 바로 바꾼다 */
+	@Transactional
+	public void changeSkuPrice(long sellerId, long skuId, long price) {
+		products.findProductIdOfSku(sellerId, skuId).orElseThrow(() -> ApiException.notFound("SKU"));
+		products.updateSkuPrice(skuId, price);
+	}
+
 	/** 재고 수동 조정. qty가 양수면 입고, 음수면 차감 */
 	@Transactional
 	public void adjustStock(long sellerId, long skuId, AdjustStock request) {

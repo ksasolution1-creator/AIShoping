@@ -1,5 +1,6 @@
 package com.aishop.api.catalog;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -22,15 +23,18 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.aishop.api.catalog.CatalogRequests.AdjustStock;
 import com.aishop.api.catalog.CatalogRequests.ChangeGrade;
+import com.aishop.api.catalog.CatalogRequests.ChangePrice;
 import com.aishop.api.catalog.CatalogRequests.ChangeProductStatus;
 import com.aishop.api.catalog.CatalogRequests.CreateProduct;
 import com.aishop.api.catalog.CatalogRequests.CreateSku;
+import com.aishop.api.catalog.CatalogRequests.DeleteProducts;
 import com.aishop.api.catalog.CatalogRequests.ProductFields;
 import com.aishop.api.catalog.CatalogRequests.UpdateSku;
 import com.aishop.api.catalog.CatalogViews.AdminProductDetail;
 import com.aishop.api.catalog.CatalogViews.AdminProductRow;
 import com.aishop.api.catalog.CatalogViews.Image;
 import com.aishop.api.common.web.AdminContext;
+import com.aishop.api.common.web.ApiException;
 import com.aishop.api.common.web.PageResponse;
 
 /** 관리자 상품 관리 API. 로그인 기능을 붙이면 /api/admin/** 전체에 권한 검사를 건다. */
@@ -94,6 +98,30 @@ public class AdminProductController {
 		return productService.getAdminProduct(admin.sellerId(), id);
 	}
 
+	@DeleteMapping("/products/{id}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void delete(@PathVariable long id) {
+		productService.deleteProduct(admin.sellerId(), id);
+	}
+
+	/** 목록에서 여러 상품 한 번에 삭제. 지우지 못한 상품은 이유와 함께 돌려준다 */
+	@PostMapping("/products/delete")
+	public Map<String, Object> deleteMany(@Valid @RequestBody DeleteProducts request) {
+		long sellerId = admin.sellerId();
+		int deleted = 0;
+		List<Map<String, Object>> failed = new ArrayList<>();
+		for (long id : request.ids()) {
+			try {
+				productService.deleteProduct(sellerId, id);
+				deleted++;
+			}
+			catch (ApiException ex) {
+				failed.add(Map.of("id", id, "reason", ex.getMessage()));
+			}
+		}
+		return Map.of("deleted", deleted, "failed", failed);
+	}
+
 	@PutMapping("/products/{id}/spec")
 	public AdminProductDetail updateSpec(@PathVariable long id, @Valid @RequestBody ProductSpec request) {
 		return productService.updateSpec(admin.sellerId(), id, request);
@@ -122,9 +150,20 @@ public class AdminProductController {
 		productService.updateSku(admin.sellerId(), skuId, request);
 	}
 
+	@DeleteMapping("/skus/{skuId}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void deleteSku(@PathVariable long skuId) {
+		productService.deleteSku(admin.sellerId(), skuId);
+	}
+
 	@PatchMapping("/skus/{skuId}/grade")
 	public void changeGrade(@PathVariable long skuId, @Valid @RequestBody ChangeGrade request) {
 		productService.changeSkuGrade(admin.sellerId(), skuId, request.conditionGrade());
+	}
+
+	@PatchMapping("/skus/{skuId}/price")
+	public void changePrice(@PathVariable long skuId, @Valid @RequestBody ChangePrice request) {
+		productService.changeSkuPrice(admin.sellerId(), skuId, request.price());
 	}
 
 	@PostMapping("/skus/{skuId}/stock-adjustments")

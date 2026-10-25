@@ -2,14 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { api, ApiError, GRADES, type GradeCode, type SkuGrade } from "@/lib/api";
+import { api, ApiError, GRADES, type GradeCode, type ListSku } from "@/lib/api";
 import { GradePicker } from "./GradePicker";
 
 /**
  * 상품 목록의 등급 칩. 누르면 등급 버튼이 펼쳐지고, 고르면 바로 저장한다.
  * 목록 표가 가로로 스크롤되므로 펼침 상자는 화면 기준(fixed)으로 띄워 잘리지 않게 한다.
  */
-export function GradeQuickEdit({ sku, onSaved }: { sku: SkuGrade; onSaved: (grade: GradeCode) => void }) {
+export function GradeQuickEdit({ sku, onSaved }: { sku: ListSku; onSaved: (grade: GradeCode) => void }) {
   const [open, setOpen] = useState<{ top: number; left: number } | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

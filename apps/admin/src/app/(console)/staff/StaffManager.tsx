@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { useMe } from "@/components/AuthGate";
 import { WhaleLoader } from "@/components/brand/WhaleLoader";
+import { ConfirmButton } from "@/components/ConfirmButton";
 import {
   ApiError,
   formatDate,
@@ -287,6 +288,12 @@ function StaffCard({
             >
               {suspended ? "정지 해제" : "정지"}
             </button>
+            <ConfirmButton
+              label="삭제"
+              question="계정을 삭제할까요? 바로 로그아웃되고 다시 로그인할 수 없습니다."
+              className="btn-outline text-danger"
+              onConfirm={() => run(async () => onChange(await staffApi.remove(staff.id)))}
+            />
           </div>
         )}
       </div>

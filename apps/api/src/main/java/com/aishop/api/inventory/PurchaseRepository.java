@@ -65,6 +65,14 @@ public class PurchaseRepository {
 		return dsl.fetchExists(SUPPLIERS, SUPPLIERS.ID.eq(supplierId), SUPPLIERS.SELLER_ID.eq(sellerId));
 	}
 
+	public boolean supplierUsed(long supplierId) {
+		return dsl.fetchExists(PURCHASES, PURCHASES.SUPPLIER_ID.eq(supplierId));
+	}
+
+	public void deleteSupplier(long supplierId) {
+		dsl.deleteFrom(SUPPLIERS).where(SUPPLIERS.ID.eq(supplierId)).execute();
+	}
+
 	public long insertSupplier(long sellerId, SupplierForm f) {
 		return dsl.insertInto(SUPPLIERS)
 			.set(SUPPLIERS.SELLER_ID, sellerId)

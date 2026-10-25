@@ -3,6 +3,7 @@ package com.aishop.api.community;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,6 +43,12 @@ public class AdminCommunityController {
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void answer(@PathVariable long id, @Valid @RequestBody AnswerForm body) {
 		service.answer(admin.sellerId(), admin.user().id(), id, body.answer());
+	}
+
+	@DeleteMapping("/questions/{id}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void deleteQuestion(@PathVariable long id) {
+		service.deleteQuestion(admin.sellerId(), id);
 	}
 
 	@GetMapping("/reviews")

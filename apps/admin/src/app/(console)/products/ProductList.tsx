@@ -5,16 +5,17 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { WhaleLoader } from "@/components/brand/WhaleLoader";
+import { ConfirmButton } from "@/components/ConfirmButton";
 import { GradeQuickEdit, gradeLabel } from "@/components/GradeQuickEdit";
+import { PriceQuickEdit } from "@/components/PriceQuickEdit";
 import { StatusChip } from "@/components/StatusChip";
 import { Thumb } from "@/components/Thumb";
 import {
   api,
   formatDate,
-  formatWon,
   PRODUCT_STATUS_LABEL,
   type AdminProductRow,
-  type GradeCode,
+  type ListSku,
   type Page,
   type ProductStatus,
 } from "@/lib/api";
@@ -33,6 +34,11 @@ export function ProductList() {
 
   const [data, setData] = useState<Page<AdminProductRow> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [reloadKey, setReloadKey] = useState(0);
+  const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(
+    params.get("deleted") === "1" ? { kind: "ok", text: "상품을 삭제했습니다." } : null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -42,26 +48,52 @@ export function ProductList() {
         if (!cancelled) {
           setData(result);
           setError(null);
+          setSelected(new Set());
         }
       })
       .catch((e: Error) => !cancelled && setError(e.message));
     return () => {
       cancelled = true;
     };
-  }, [q, status, page]);
+  }, [q, status, page, reloadKey]);
 
-  /** 등급을 바꾼 뒤 목록을 다시 부르지 않고 그 칩만 바꾼다 */
-  function updateGrade(productId: number, skuId: number, code: GradeCode) {
+  function toggle(id: number) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function deleteSelected() {
+    try {
+      const result = await api.deleteProducts([...selected]);
+      setNotice(
+        result.failed.length === 0
+          ? { kind: "ok", text: `${result.deleted}개 상품을 삭제했습니다.` }
+          : {
+              kind: "error",
+              text:
+                `${result.deleted}개 삭제, ${result.failed.length}개는 지우지 못했습니다: ` +
+                result.failed.map((f) => `#${f.id} ${f.reason}`).join(" / "),
+            },
+      );
+      setReloadKey((k) => k + 1);
+    } catch (e) {
+      setNotice({ kind: "error", text: e instanceof Error ? e.message : "삭제하지 못했습니다." });
+    }
+  }
+
+  /** 등급·판매가를 바꾼 뒤 목록을 다시 부르지 않고 그 줄만 바꾼다 */
+  function updateSku(productId: number, skuId: number, change: Partial<ListSku>) {
     setData((d) =>
       d && {
         ...d,
         items: d.items.map((row) =>
           row.id !== productId
             ? row
-            : {
-                ...row,
-                skus: row.skus.map((s) => (s.skuId === skuId ? { ...s, grade: { code, label: gradeLabel(code) } } : s)),
-              },
+            : { ...row, skus: row.skus.map((s) => (s.skuId === skuId ? { ...s, ...change } : s)) },
         ),
       },
     );
@@ -115,16 +147,44 @@ export function ProductList() {
       </form>
 
       {error && <p className="rounded bg-danger/10 p-3 text-sm text-danger">{error}</p>}
+      {notice && (
+        <p
+          role="status"
+          className={`rounded p-3 text-sm ${notice.kind === "ok" ? "bg-ok/10 text-ok" : "bg-danger/10 text-danger"}`}
+        >
+          {notice.text}
+        </p>
+      )}
+      {selected.size > 0 && (
+        <div className="card flex flex-wrap items-center gap-3 p-3 text-sm">
+          <span className="font-medium">{selected.size}개 선택</span>
+          <ConfirmButton
+            label="선택 삭제"
+            question={`${selected.size}개 상품을 삭제할까요?`}
+            onConfirm={deleteSelected}
+          />
+          <button type="button" className="btn-outline" onClick={() => setSelected(new Set())}>
+            선택 해제
+          </button>
+        </div>
+      )}
 
       <div className="card overflow-x-auto">
         <table className="w-full min-w-[52rem] text-sm">
           <thead className="border-b border-line bg-surface-muted text-left text-xs text-ink-soft">
             <tr>
+              <th className="w-10 px-3 py-2.5">
+                <input
+                  type="checkbox"
+                  aria-label="이 페이지 전체 선택"
+                  checked={!!data?.items.length && data.items.every((p) => selected.has(p.id))}
+                  onChange={(e) => setSelected(e.target.checked ? new Set(data?.items.map((p) => p.id)) : new Set())}
+                />
+              </th>
               <th className="px-3 py-2.5 font-medium">상품</th>
               <th className="px-3 py-2.5 font-medium">카테고리</th>
               <th className="px-3 py-2.5 font-medium">상태</th>
-              <th className="px-3 py-2.5 font-medium">상태등급 (눌러서 변경)</th>
-              <th className="px-3 py-2.5 text-right font-medium">최저가</th>
+              <th className="px-3 py-2.5 font-medium">상태등급 · 판매가 (눌러서 변경)</th>
               <th className="px-3 py-2.5 text-right font-medium">재고 (예약)</th>
               <th className="px-3 py-2.5 font-medium">등록일</th>
             </tr>
@@ -132,6 +192,14 @@ export function ProductList() {
           <tbody>
             {data?.items.map((p) => (
               <tr key={p.id} className="border-b border-line last:border-0 hover:bg-surface-muted/60">
+                <td className="px-3 py-2">
+                  <input
+                    type="checkbox"
+                    aria-label={`${p.name} 선택`}
+                    checked={selected.has(p.id)}
+                    onChange={() => toggle(p.id)}
+                  />
+                </td>
                 <td className="px-3 py-2">
                   <Link href={`/products/${p.id}`} className="flex items-center gap-3">
                     <Thumb src={p.thumbnailUrl} className="size-11" />
@@ -148,18 +216,19 @@ export function ProductList() {
                   <StatusChip status={p.status} />
                 </td>
                 <td className="px-3 py-2">
-                  <div className="flex max-w-56 flex-wrap gap-1">
+                  <ul className="flex min-w-64 flex-col gap-1">
                     {p.skus.map((sku) => (
-                      <GradeQuickEdit
-                        key={sku.skuId}
-                        sku={sku}
-                        onSaved={(code) => updateGrade(p.id, sku.skuId, code)}
-                      />
+                      <li key={sku.skuId} className="flex items-center justify-between gap-2">
+                        <GradeQuickEdit
+                          sku={sku}
+                          onSaved={(code) => updateSku(p.id, sku.skuId, { grade: { code, label: gradeLabel(code) } })}
+                        />
+                        <PriceQuickEdit sku={sku} onSaved={(price) => updateSku(p.id, sku.skuId, { price })} />
+                      </li>
                     ))}
-                    {p.skus.length === 0 && <span className="text-ink-faint">-</span>}
-                  </div>
+                    {p.skus.length === 0 && <li className="text-ink-faint">판매 단위 없음</li>}
+                  </ul>
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums">{formatWon(p.minPrice)}</td>
                 <td className="px-3 py-2 text-right tabular-nums">
                   <span className={p.onHand - p.reserved <= 0 ? "font-semibold text-danger" : ""}>{p.onHand}</span>
                   {p.reserved > 0 && <span className="text-ink-faint"> ({p.reserved})</span>}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { ConfirmButton } from "@/components/ConfirmButton";
 import { api, ApiError, type Category } from "@/lib/api";
 
 export function CategoryManager() {
@@ -29,6 +30,22 @@ export function CategoryManager() {
       setMessage({ kind: "ok", text: `'${name.trim()}' 카테고리를 추가했습니다.` });
     } catch (e) {
       setMessage({ kind: "error", text: e instanceof ApiError ? e.message : "저장하지 못했습니다." });
+    }
+  }
+
+  async function remove(c: Category) {
+    try {
+      const { movedProducts } = await api.deleteCategory(c.id);
+      await load();
+      const parent = categories.find((x) => x.id === c.parentId);
+      setMessage({
+        kind: "ok",
+        text:
+          `'${c.name}' 카테고리를 삭제했습니다.` +
+          (movedProducts > 0 ? ` 들어 있던 상품 ${movedProducts}개는 ${parent ? `'${parent.name}'` : "'카테고리 없음'"}으로 옮겼습니다.` : ""),
+      });
+    } catch (e) {
+      setMessage({ kind: "error", text: e instanceof ApiError ? e.message : "삭제하지 못했습니다." });
     }
   }
 
@@ -69,15 +86,33 @@ export function CategoryManager() {
         </p>
       )}
 
+      <p className="-mb-3 text-xs text-ink-faint">카테고리를 지우면 그 안의 상품은 상위 카테고리로 옮겨집니다.</p>
       <ul className="card divide-y divide-line">
         {roots.map((root) => (
           <li key={root.id} className="px-4 py-3">
-            <span className="font-medium">{root.name}</span>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-medium">{root.name}</span>
+              <ConfirmButton
+                label="삭제"
+                question={children(root.id).length > 0 ? "하위 카테고리를 먼저 지워야 합니다. 시도할까요?" : `'${root.name}'을 삭제할까요?`}
+                className="text-xs text-danger underline underline-offset-2"
+                onConfirm={() => remove(root)}
+              />
+            </div>
             {children(root.id).length > 0 && (
               <ul className="mt-1.5 flex flex-wrap gap-1.5 pl-3">
                 {children(root.id).map((child) => (
-                  <li key={child.id} className="rounded bg-surface-muted px-2 py-0.5 text-sm text-ink-soft">
+                  <li
+                    key={child.id}
+                    className="inline-flex items-center gap-1 rounded bg-surface-muted px-2 py-0.5 text-sm text-ink-soft"
+                  >
                     {child.name}
+                    <ConfirmButton
+                      label={<span aria-label={`${child.name} 삭제`}>×</span>}
+                      question="삭제?"
+                      className="px-0.5 text-ink-faint hover:text-danger"
+                      onConfirm={() => remove(child)}
+                    />
                   </li>
                 ))}
               </ul>

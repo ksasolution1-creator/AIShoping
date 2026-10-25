@@ -6,6 +6,7 @@ import java.util.Map;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -86,6 +87,12 @@ public class AdminInventoryController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public Map<String, Long> createSupplier(@Valid @RequestBody SupplierForm body) {
 		return Map.of("id", service.createSupplier(admin.sellerId(), body));
+	}
+
+	@DeleteMapping("/suppliers/{id}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void deleteSupplier(@PathVariable long id) {
+		service.deleteSupplier(admin.sellerId(), id);
 	}
 
 	@PutMapping("/suppliers/{id}")

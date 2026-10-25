@@ -94,6 +94,13 @@ public class CommunityService {
 		}
 	}
 
+	@Transactional
+	public void deleteQuestion(long sellerId, long questionId) {
+		if (!repo.deleteQuestion(sellerId, questionId)) {
+			throw ApiException.notFound("문의");
+		}
+	}
+
 	// ------------------------------------------------------------------
 	// 찜
 	// ------------------------------------------------------------------

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { WhaleLoader } from "@/components/brand/WhaleLoader";
+import { ConfirmButton } from "@/components/ConfirmButton";
 import {
   ApiError,
   communityAdminApi,
@@ -114,8 +115,24 @@ function QuestionCard({ q, onAnswered }: { q: AdminQuestion; onAnswered: () => v
         <span>· {q.author}</span>
         <span>· {formatDate(q.createdAt)}</span>
         {q.secret && <span className="rounded bg-surface-muted px-1.5 py-0.5">비밀글</span>}
+        <span className="ml-auto">
+          <ConfirmButton
+            label="문의 삭제"
+            question="광고·욕설 등으로 지울까요? 고객 화면에서도 사라집니다."
+            className="text-xs text-danger underline underline-offset-2"
+            onConfirm={async () => {
+              try {
+                await communityAdminApi.deleteQuestion(q.id);
+                onAnswered();
+              } catch (err) {
+                setError(err instanceof ApiError ? err.message : "삭제하지 못했습니다.");
+              }
+            }}
+          />
+        </span>
       </div>
       <p className="whitespace-pre-line">{q.question}</p>
+      {error && <p className="text-xs text-danger">{error}</p>}
       {editing ? (
         <form onSubmit={submit} className="flex flex-col gap-2">
           <textarea
@@ -127,7 +144,6 @@ function QuestionCard({ q, onAnswered }: { q: AdminQuestion; onAnswered: () => v
             placeholder="답변을 입력하세요. 고객에게 그대로 보입니다."
             className="input h-auto py-2"
           />
-          {error && <p className="text-xs text-danger">{error}</p>}
           <div className="flex justify-end gap-2">
             {q.answer && (
               <button type="button" className="btn-outline" onClick={() => setEditing(false)}>

@@ -54,11 +54,11 @@ export type AdminProductRow = {
   onHand: number;
   reserved: number;
   createdAt: string;
-  /** SKU별 상태등급 (목록에서 바로 변경) */
-  skus: SkuGrade[];
+  /** SKU별 상태등급·판매가 (목록에서 바로 변경) */
+  skus: ListSku[];
 };
 
-export type SkuGrade = { skuId: number; optionText: string | null; grade: Grade };
+export type ListSku = { skuId: number; optionText: string | null; grade: Grade; price: number };
 
 export type AdminSku = {
   id: number;
@@ -382,6 +382,9 @@ export const claimAdminApi = {
 
 export const api = {
   categories: () => request<Category[]>("/api/categories"),
+  /** 하위 카테고리가 있으면 막히고, 들어 있던 상품은 상위 카테고리로 옮겨진다 */
+  deleteCategory: (id: number) =>
+    request<{ movedProducts: number }>(`/api/admin/categories/${id}`, { method: "DELETE" }),
   createCategory: (body: { name: string; parentId: number | null }) =>
     request<{ id: number }>("/api/admin/categories", { method: "POST", body: JSON.stringify(body) }),
 
@@ -420,6 +423,8 @@ export const api = {
       status: SkuStatus;
     },
   ) => request<void>(`/api/admin/skus/${skuId}`, { method: "PUT", body: JSON.stringify(body) }),
+  changeSkuPrice: (skuId: number, price: number) =>
+    request<void>(`/api/admin/skus/${skuId}/price`, { method: "PATCH", body: JSON.stringify({ price }) }),
   changeSkuGrade: (skuId: number, conditionGrade: GradeCode) =>
     request<void>(`/api/admin/skus/${skuId}/grade`, { method: "PATCH", body: JSON.stringify({ conditionGrade }) }),
   adjustStock: (skuId: number, body: { qty: number; memo: string | null }) =>
@@ -430,6 +435,13 @@ export const api = {
     const query = skuId ? `?skuId=${skuId}` : "";
     return request<ProductImage>(`/api/admin/products/${id}/images${query}`, { method: "POST", body: form });
   },
+  deleteProduct: (id: number) => request<void>(`/api/admin/products/${id}`, { method: "DELETE" }),
+  deleteProducts: (ids: number[]) =>
+    request<{ deleted: number; failed: { id: number; reason: string }[] }>("/api/admin/products/delete", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    }),
+  deleteSku: (skuId: number) => request<void>(`/api/admin/skus/${skuId}`, { method: "DELETE" }),
   deleteImage: (id: number, imageId: number) =>
     request<void>(`/api/admin/products/${id}/images/${imageId}`, { method: "DELETE" }),
 };
@@ -591,6 +603,7 @@ export const inventoryApi = {
   suppliers: (all = false) => request<Supplier[]>(`/api/admin/suppliers${all ? "?all=true" : ""}`),
   createSupplier: (body: SupplierForm) =>
     request<{ id: number }>("/api/admin/suppliers", { method: "POST", body: JSON.stringify(body) }),
+  deleteSupplier: (id: number) => request<void>(`/api/admin/suppliers/${id}`, { method: "DELETE" }),
   updateSupplier: (id: number, body: SupplierForm) =>
     request<void>(`/api/admin/suppliers/${id}`, { method: "PUT", body: JSON.stringify(body) }),
 
@@ -746,6 +759,7 @@ export const communityAdminApi = {
   answer: (id: number, answer: string) =>
     request<void>(`/api/admin/questions/${id}/answer`, { method: "POST", body: JSON.stringify({ answer }) }),
   reviews: (page = 0) => request<Page<AdminReview>>(`/api/admin/reviews?page=${page}`),
+  deleteQuestion: (id: number) => request<void>(`/api/admin/questions/${id}`, { method: "DELETE" }),
   setHidden: (id: number, hidden: boolean) =>
     request<void>(`/api/admin/reviews/${id}/hidden`, { method: "POST", body: JSON.stringify({ hidden }) }),
 };
@@ -926,6 +940,7 @@ export const staffApi = {
     request<Staff[]>("/api/admin/staff", { method: "POST", body: JSON.stringify(body) }),
   change: (id: number, body: { role?: StaffRole; status?: "ACTIVE" | "SUSPENDED" }) =>
     request<Staff[]>(`/api/admin/staff/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  remove: (id: number) => request<Staff[]>(`/api/admin/staff/${id}`, { method: "DELETE" }),
   resetPassword: (id: number, password: string) =>
     request<void>(`/api/admin/staff/${id}/password`, { method: "POST", body: JSON.stringify({ password }) }),
 };

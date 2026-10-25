@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { WhaleLoader } from "@/components/brand/WhaleLoader";
+import { ConfirmButton } from "@/components/ConfirmButton";
 import { draftFromProduct, draftToFields, ProductFieldsEditor, type ProductDraft } from "@/components/ProductFieldsEditor";
 import { GradePicker } from "@/components/GradePicker";
 import { emptySku, SkuDraftRow, skuDraftToRequest, validateSkuDraft, type SkuDraft } from "@/components/SkuDraftRow";
@@ -43,6 +45,7 @@ function errorMessage(e: unknown) {
 
 /** 상품 상세·수정 화면. id와 created는 서버 페이지(page.tsx)가 주소에서 읽어 넘긴다 */
 export function ProductEditor({ id, created, photoFailed = 0 }: { id: number; created: boolean; photoFailed?: number }) {
+  const router = useRouter();
   const [product, setProduct] = useState<AdminProductDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(
@@ -71,6 +74,15 @@ export function ProductEditor({ id, created, photoFailed = 0 }: { id: number; cr
   if (!product) return <WhaleLoader />;
 
   const show = (kind: "ok" | "error", text: string) => setNotice({ kind, text });
+
+  async function deleteProduct() {
+    try {
+      await api.deleteProduct(id);
+      router.push("/products?deleted=1");
+    } catch (e) {
+      show("error", errorMessage(e));
+    }
+  }
 
   async function changeStatus(status: ProductStatus) {
     try {
@@ -110,6 +122,13 @@ export function ProductEditor({ id, created, photoFailed = 0 }: { id: number; cr
               쇼핑몰에서 보기 ↗
             </a>
           )}
+          <span className="ml-auto">
+            <ConfirmButton
+              label="상품 삭제"
+              question="상품을 삭제할까요? 쇼핑몰·장바구니에서 사라집니다."
+              onConfirm={deleteProduct}
+            />
+          </span>
         </div>
         {notice && (
           <p
@@ -183,7 +202,7 @@ function SkuSection({ product, onChanged, show }: SectionProps & { onChanged: ()
           </thead>
           <tbody>
             {product.skus.map((sku) => (
-              <SkuRow key={sku.id} sku={sku} onChanged={onChanged} show={show} />
+              <SkuRow key={sku.id} sku={sku} canDelete={product.skus.length > 1} onChanged={onChanged} show={show} />
             ))}
           </tbody>
         </table>
@@ -205,7 +224,12 @@ function SkuSection({ product, onChanged, show }: SectionProps & { onChanged: ()
   );
 }
 
-function SkuRow({ sku, onChanged, show }: { sku: AdminSku } & Pick<SectionProps, "show"> & { onChanged: () => Promise<void> }) {
+function SkuRow({
+  sku,
+  canDelete,
+  onChanged,
+  show,
+}: { sku: AdminSku; canDelete: boolean } & Pick<SectionProps, "show"> & { onChanged: () => Promise<void> }) {
   const [grade, setGrade] = useState<GradeCode>(sku.grade.code);
   const [options, setOptions] = useState(optionsToText(sku.optionValues));
   const [note, setNote] = useState(sku.conditionNote ?? "");
@@ -243,6 +267,16 @@ function SkuRow({ sku, onChanged, show }: { sku: AdminSku } & Pick<SectionProps,
     }
   }
 
+  async function remove() {
+    try {
+      await api.deleteSku(sku.id);
+      await onChanged();
+      show("ok", `${sku.skuCode} 판매 단위를 삭제했습니다.`);
+    } catch (e) {
+      show("error", errorMessage(e));
+    }
+  }
+
   async function adjust() {
     const n = Number(qty);
     if (!Number.isInteger(n) || n === 0) {
@@ -274,6 +308,14 @@ function SkuRow({ sku, onChanged, show }: { sku: AdminSku } & Pick<SectionProps,
             </span>
           )}
           <span className="font-mono text-xs text-ink-faint">{sku.skuCode}</span>
+          {canDelete && (
+            <ConfirmButton
+              label="이 판매 단위 삭제"
+              question={sku.onHand > 0 ? `재고 ${sku.onHand}개도 함께 빠집니다. 삭제할까요?` : "삭제할까요?"}
+              className="self-start text-xs text-danger underline underline-offset-2"
+              onConfirm={remove}
+            />
+          )}
         </div>
       </td>
       <td className="py-2.5 pr-3">
