@@ -29,6 +29,8 @@ spring:
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: ${MAIL_STARTTLS:true}
+      # 465 포트(SSL) 메일 서버는 MAIL_SSL=true (예: 다음 smtp.daum.net)
+      mail.smtp.ssl.enable: ${MAIL_SSL:false}
       mail.smtp.connectiontimeout: 5000
       mail.smtp.timeout: 10000
   jackson:
