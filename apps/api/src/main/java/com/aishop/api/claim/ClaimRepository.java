@@ -123,14 +123,14 @@ public class ClaimRepository {
 	}
 
 	public void insertRefund(long paymentId, long claimId, long amount, String reason, String idempotencyKey,
-			String transactionKey, String raw) {
+			String status, String transactionKey, String raw) {
 		dsl.insertInto(REFUNDS)
 			.set(REFUNDS.PAYMENT_ID, paymentId)
 			.set(REFUNDS.CLAIM_ID, claimId)
 			.set(REFUNDS.AMOUNT, amount)
 			.set(REFUNDS.REASON, reason)
 			.set(REFUNDS.IDEMPOTENCY_KEY, idempotencyKey)
-			.set(REFUNDS.STATUS, "DONE")
+			.set(REFUNDS.STATUS, status)
 			.set(REFUNDS.PG_TRANSACTION_KEY, transactionKey)
 			.set(REFUNDS.RAW_RESPONSE, raw == null ? null : JSONB.valueOf(raw))
 			.onConflict(REFUNDS.IDEMPOTENCY_KEY)

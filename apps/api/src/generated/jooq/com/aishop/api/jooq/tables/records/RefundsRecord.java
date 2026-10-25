@@ -186,6 +186,21 @@ public class RefundsRecord extends UpdatableRecordImpl<RefundsRecord> {
         return (OffsetDateTime) get(10);
     }
 
+    /**
+     * Setter for <code>public.refunds.completed_at</code>.
+     */
+    public RefundsRecord setCompletedAt(OffsetDateTime value) {
+        set(11, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.refunds.completed_at</code>.
+     */
+    public OffsetDateTime getCompletedAt() {
+        return (OffsetDateTime) get(11);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -209,7 +224,7 @@ public class RefundsRecord extends UpdatableRecordImpl<RefundsRecord> {
     /**
      * Create a detached, initialised RefundsRecord
      */
-    public RefundsRecord(Long id, Long paymentId, Long claimId, Long amount, String reason, String idempotencyKey, String status, String pgTransactionKey, JSONB rawResponse, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
+    public RefundsRecord(Long id, Long paymentId, Long claimId, Long amount, String reason, String idempotencyKey, String status, String pgTransactionKey, JSONB rawResponse, OffsetDateTime createdAt, OffsetDateTime updatedAt, OffsetDateTime completedAt) {
         super(Refunds.REFUNDS);
 
         setId(id);
@@ -223,6 +238,7 @@ public class RefundsRecord extends UpdatableRecordImpl<RefundsRecord> {
         setRawResponse(rawResponse);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
+        setCompletedAt(completedAt);
         resetTouchedOnNotNull();
     }
 }

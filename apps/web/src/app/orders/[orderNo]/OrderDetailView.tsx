@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { WhaleLoader } from "@/components/brand/WhaleLoader";
@@ -30,6 +30,7 @@ const OPEN_CLAIM = new Set(["REQUESTED", "APPROVED", "COLLECTING", "INSPECTING"]
 
 export function OrderDetailView({ orderNo }: { orderNo: string }) {
   const router = useRouter();
+  const justPlaced = useSearchParams().get("placed") === "1";
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
@@ -71,6 +72,8 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
   const claimsByItem = new Map<number, Claim[]>();
   order.claims.forEach((c) => claimsByItem.set(c.orderItemId, [...(claimsByItem.get(c.orderItemId) ?? []), c]));
   const refundedTotal = order.claims.reduce((sum, c) => sum + (c.refundAmount ?? 0), 0);
+  const awaitingDeposit = order.status === "PENDING_PAYMENT" && order.bankDeposit !== null;
+  const pendingRefund = order.refunds.filter((r) => r.status === "REQUESTED").reduce((sum, r) => sum + r.amount, 0);
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 py-6">
@@ -87,6 +90,51 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
       {error && (
         <p role="alert" className="rounded-xl bg-sale/10 p-3 text-sm text-sale">
           {error}
+        </p>
+      )}
+
+      {awaitingDeposit && order.bankDeposit && (
+        <section className="flex flex-col gap-3 rounded-2xl border-2 border-brand/40 bg-brand/5 p-5 text-sm">
+          <h2 className="text-base font-bold text-navy">
+            {justPlaced ? "주문이 접수되었습니다. 아래 계좌로 입금해 주세요." : "입금을 기다리고 있어요"}
+          </h2>
+          <dl className="grid grid-cols-[5.5rem_1fr] gap-y-1.5">
+            <dt className="text-ink-soft">입금 계좌</dt>
+            <dd className="font-semibold">
+              {order.bankDeposit.bankName}{" "}
+              <span className="font-mono tabular-nums">{order.bankDeposit.accountNo}</span>
+              <button
+                type="button"
+                onClick={() => navigator.clipboard?.writeText(order.bankDeposit!.accountNo.replace(/-/g, ""))}
+                className="ml-2 text-xs font-normal text-brand underline underline-offset-2"
+              >
+                복사
+              </button>
+            </dd>
+            <dt className="text-ink-soft">예금주</dt>
+            <dd>{order.bankDeposit.accountHolder}</dd>
+            <dt className="text-ink-soft">입금 금액</dt>
+            <dd className="font-bold text-sale tabular-nums">{formatWon(order.payAmount)}</dd>
+            <dt className="text-ink-soft">입금자명</dt>
+            <dd>{order.bankDeposit.depositorName}</dd>
+            {order.bankDeposit.dueAt && (
+              <>
+                <dt className="text-ink-soft">입금 기한</dt>
+                <dd>{new Date(order.bankDeposit.dueAt).toLocaleString("ko-KR")}까지</dd>
+              </>
+            )}
+          </dl>
+          <p className="text-xs leading-relaxed text-ink-faint">
+            입금자명과 금액이 주문과 같아야 확인이 빠릅니다. 입금이 확인되면 상품 준비를 시작하며, 기한이 지나면 주문이
+            자동으로 취소됩니다.
+          </p>
+        </section>
+      )}
+
+      {pendingRefund > 0 && (
+        <p className="rounded-xl bg-surface-muted p-4 text-sm text-ink-soft">
+          환불 금액 {formatWon(pendingRefund)}은 담당자가 환불 계좌를 확인한 뒤 직접 보내 드립니다. 주문 시 입력한
+          연락처로 연락드립니다.
         </p>
       )}
 
@@ -155,6 +203,9 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
           <span>결제 금액</span>
           <span className="tabular-nums">{formatWon(order.payAmount)}</span>
         </div>
+        {order.payMethod === "BANK_TRANSFER" && !order.payment && (
+          <p className="text-xs text-ink-faint">무통장입금 · 입금 확인 전</p>
+        )}
         {refundedTotal > 0 && (
           <div className="flex justify-between font-bold text-sale">
             <span>환불 금액</span>
@@ -167,10 +218,14 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
       </section>
 
       {order.cancellable &&
-        order.items.length > 1 &&
+        (order.items.length > 1 || awaitingDeposit) &&
         (confirmingCancel ? (
           <div className="flex flex-col gap-3 rounded-2xl border border-sale/30 p-4">
-            <p className="text-sm">주문 전체를 취소하면 결제 금액 {formatWon(order.payAmount)}이 환불됩니다. 취소할까요?</p>
+            <p className="text-sm">
+              {awaitingDeposit
+                ? "아직 입금 전이라 주문만 취소됩니다. 취소할까요?"
+                : `주문 전체를 취소하면 결제 금액 ${formatWon(order.payAmount)}이 환불됩니다. 취소할까요?`}
+            </p>
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => setConfirmingCancel(false)} className="h-11 rounded-xl border border-line text-sm">
                 그대로 두기
@@ -183,13 +238,13 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
                 }}
                 className="h-11 rounded-xl bg-sale text-sm font-semibold text-white disabled:opacity-50"
               >
-                {busy ? "취소 중…" : "전체 취소"}
+                {busy ? "취소 중…" : awaitingDeposit ? "주문 취소" : "전체 취소"}
               </button>
             </div>
           </div>
         ) : (
           <button type="button" onClick={() => setConfirmingCancel(true)} className="h-11 rounded-xl border border-line text-sm">
-            주문 전체 취소
+            {awaitingDeposit ? "주문 취소" : "주문 전체 취소"}
           </button>
         ))}
     </div>

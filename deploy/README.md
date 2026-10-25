@@ -48,7 +48,8 @@ docker compose logs -f caddy  # 인증서 발급 확인 (certificate obtained)
 - `DB_PASSWORD`: `openssl rand -base64 24`
 - `FIELD_ENCRYPTION_KEY`: `openssl rand -base64 32` (**한 번 정하면 바꾸지 말 것.** 잃어버리면 저장된 연락처·주소를 복구할 수 없다. 안전한 곳에 따로 보관)
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD`: 최초 관리자 (10자 이상). 계정이 만들어진 뒤에는 지워도 된다.
-- `TOSS_CLIENT_KEY`, `TOSS_SECRET_KEY`: 테스트 서버는 토스 테스트 키
+- `TOSS_CLIENT_KEY`, `TOSS_SECRET_KEY`: 테스트 서버는 토스 테스트 키. 카드 결제는 `CARD_PAYMENT_ENABLED=true`일 때만 열린다
+- `BANK_*`: 무통장입금 계좌와 입금 기한. 비우면 기본값(기업은행 회사 계좌, 48시간)을 쓴다
 
 ### 간편로그인 (카카오·네이버)
 

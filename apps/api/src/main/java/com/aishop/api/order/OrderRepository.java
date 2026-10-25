@@ -42,7 +42,9 @@ import org.springframework.stereotype.Repository;
 import com.aishop.api.jooq.tables.records.OrderItemsRecord;
 import com.aishop.api.jooq.tables.records.OrdersRecord;
 import com.aishop.api.jooq.tables.records.PaymentsRecord;
+import com.aishop.api.jooq.tables.records.RefundsRecord;
 import com.aishop.api.jooq.tables.records.ShipmentsRecord;
+import com.aishop.api.payment.Refunder;
 
 @Repository
 public class OrderRepository {
@@ -171,7 +173,7 @@ public class OrderRepository {
 
 	public List<OrdersRecord> findByUser(long userId, int limit, int offset) {
 		return dsl.selectFrom(ORDERS)
-			.where(ORDERS.USER_ID.eq(userId), ORDERS.STATUS.ne("PENDING_PAYMENT"))
+			.where(ORDERS.USER_ID.eq(userId), VISIBLE)
 			.orderBy(ORDERS.ORDERED_AT.desc())
 			.limit(limit)
 			.offset(offset)
@@ -179,10 +181,14 @@ public class OrderRepository {
 	}
 
 	public int countByUser(long userId) {
-		return dsl.fetchCount(ORDERS, ORDERS.USER_ID.eq(userId).and(ORDERS.STATUS.ne("PENDING_PAYMENT")));
+		return dsl.fetchCount(ORDERS, ORDERS.USER_ID.eq(userId).and(VISIBLE));
 	}
 
-	/** 판매자 상품이 들어 있는 주문 (결제 대기는 제외) */
+	/** 목록에 보이는 주문: 결제창을 띄우다 만 카드 주문은 빼고, 무통장입금 대기 주문은 보인다 */
+	private static final Condition VISIBLE = ORDERS.STATUS.ne("PENDING_PAYMENT")
+		.or(ORDERS.PAY_METHOD.eq(Refunder.BANK_TRANSFER));
+
+	/** 판매자 상품이 들어 있는 주문 (카드 결제 대기는 제외) */
 	public List<OrdersRecord> findForSeller(long sellerId, String itemStatus, String keyword, int limit, int offset) {
 		return dsl.selectFrom(ORDERS)
 			.where(sellerCondition(sellerId, itemStatus, keyword))
@@ -201,7 +207,7 @@ public class OrderRepository {
 			.and(itemStatus == null ? noCondition() : ORDER_ITEMS.STATUS.eq(itemStatus));
 		Condition search = keyword == null || keyword.isBlank() ? noCondition()
 				: ORDERS.ORDER_NO.containsIgnoreCase(keyword.strip()).or(ORDERS.ORDERER_NAME.eq(keyword.strip()));
-		return ORDERS.STATUS.ne("PENDING_PAYMENT")
+		return VISIBLE
 			.andExists(selectOne().from(ORDER_ITEMS).where(items))
 			.and(search);
 	}
@@ -221,11 +227,17 @@ public class OrderRepository {
 			.fetchOptional(PRODUCT_IMAGES.URL);
 	}
 
-	/** 결제 시간이 지난 결제 대기 주문 (다른 서버가 처리 중인 행은 건너뜀) */
+	/**
+	 * 결제 시간이 지난 결제 대기 주문 (다른 서버가 처리 중인 행은 건너뜀).
+	 * 카드는 주문 후 ttl, 무통장입금은 입금 기한(deposit_due_at)이 기준이다.
+	 */
 	public List<String> lockExpiredPending(Duration ttl, int limit) {
+		OffsetDateTime now = OffsetDateTime.now();
+		Condition cardExpired = ORDERS.PAY_METHOD.eq("TOSS").and(ORDERS.CREATED_AT.lt(now.minus(ttl)));
+		Condition depositExpired = ORDERS.PAY_METHOD.eq(Refunder.BANK_TRANSFER).and(ORDERS.DEPOSIT_DUE_AT.lt(now));
 		return dsl.select(ORDERS.ORDER_NO)
 			.from(ORDERS)
-			.where(ORDERS.STATUS.eq("PENDING_PAYMENT"), ORDERS.CREATED_AT.lt(OffsetDateTime.now().minus(ttl)))
+			.where(ORDERS.STATUS.eq("PENDING_PAYMENT"), cardExpired.or(depositExpired))
 			.orderBy(ORDERS.CREATED_AT)
 			.limit(limit)
 			.forUpdate()
@@ -279,19 +291,51 @@ public class OrderRepository {
 			.execute();
 	}
 
-	public void insertRefund(long paymentId, long amount, String reason, String idempotencyKey, String transactionKey,
-			String raw) {
+	/** 입금 확인: 무통장입금 결제 행을 결제완료로 만든다 */
+	public void insertBankPayment(long orderId, long amount) {
+		dsl.insertInto(PAYMENTS)
+			.set(PAYMENTS.ORDER_ID, orderId)
+			.set(PAYMENTS.PROVIDER, Refunder.BANK_TRANSFER)
+			.set(PAYMENTS.METHOD, "무통장입금")
+			.set(PAYMENTS.AMOUNT, amount)
+			.set(PAYMENTS.BALANCE_AMOUNT, amount)
+			.set(PAYMENTS.STATUS, "DONE")
+			.set(PAYMENTS.APPROVED_AT, currentOffsetDateTime())
+			.execute();
+	}
+
+	public void insertRefund(long paymentId, long amount, String reason, String idempotencyKey, String status,
+			String transactionKey, String raw) {
 		dsl.insertInto(REFUNDS)
 			.set(REFUNDS.PAYMENT_ID, paymentId)
 			.set(REFUNDS.AMOUNT, amount)
 			.set(REFUNDS.REASON, reason)
 			.set(REFUNDS.IDEMPOTENCY_KEY, idempotencyKey)
-			.set(REFUNDS.STATUS, "DONE")
+			.set(REFUNDS.STATUS, status)
 			.set(REFUNDS.PG_TRANSACTION_KEY, transactionKey)
 			.set(REFUNDS.RAW_RESPONSE, raw == null ? null : JSONB.valueOf(raw))
 			.onConflict(REFUNDS.IDEMPOTENCY_KEY)
 			.doNothing()
 			.execute();
+	}
+
+	/** 주문의 환불 내역 (오래된 순) */
+	public List<RefundsRecord> findRefunds(long orderId) {
+		return dsl.selectFrom(REFUNDS)
+			.where(REFUNDS.PAYMENT_ID.in(select(PAYMENTS.ID).from(PAYMENTS).where(PAYMENTS.ORDER_ID.eq(orderId))))
+			.orderBy(REFUNDS.ID)
+			.fetch();
+	}
+
+	/** 송금 대기 환불을 송금 완료로 바꾼다. 바뀐 행이 없으면 false */
+	public boolean completeManualRefund(long orderId, long refundId) {
+		return dsl.update(REFUNDS)
+			.set(REFUNDS.STATUS, "DONE")
+			.set(REFUNDS.COMPLETED_AT, currentOffsetDateTime())
+			.set(REFUNDS.UPDATED_AT, currentOffsetDateTime())
+			.where(REFUNDS.ID.eq(refundId), REFUNDS.STATUS.eq("REQUESTED"))
+			.and(REFUNDS.PAYMENT_ID.in(select(PAYMENTS.ID).from(PAYMENTS).where(PAYMENTS.ORDER_ID.eq(orderId))))
+			.execute() == 1;
 	}
 
 	public void deleteCartItems(long userId, Collection<Long> skuIds) {

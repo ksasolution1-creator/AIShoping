@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +29,7 @@ import com.aishop.api.order.OrderViews.CreateOrder;
 import com.aishop.api.order.OrderViews.OrderLineRequest;
 import com.aishop.api.order.OrderViews.OrderDetail;
 import com.aishop.api.order.OrderViews.OrderSummary;
+import com.aishop.api.payment.BankAccount;
 import com.aishop.api.payment.PaymentService;
 import com.aishop.api.payment.PaymentService.Outcome;
 import com.aishop.api.payment.TossPaymentsClient;
@@ -40,20 +42,33 @@ public class OrderController {
 	private final PaymentService paymentService;
 	private final TossPaymentsClient toss;
 	private final FieldCipher cipher;
+	private final BankAccount bank;
+	private final boolean cardEnabled;
 
 	public OrderController(OrderService orderService, PaymentService paymentService, TossPaymentsClient toss,
-			FieldCipher cipher) {
+			FieldCipher cipher, BankAccount bank, @Value("${aishop.payment.card-enabled:false}") boolean cardEnabled) {
 		this.orderService = orderService;
 		this.paymentService = paymentService;
 		this.toss = toss;
 		this.cipher = cipher;
+		this.bank = bank;
+		this.cardEnabled = cardEnabled;
 	}
 
-	/** 결제위젯을 띄우는 데 필요한 값. customerKey는 회원 ID를 감춘 고객 식별값 */
+	private boolean cardReady() {
+		return cardEnabled && toss.isConfigured();
+	}
+
+	/**
+	 * 주문서의 결제 수단 설정. cardReady면 토스 결제위젯을, bankReady면 무통장입금 계좌를 보여준다.
+	 * customerKey는 회원 ID를 감춘 고객 식별값
+	 */
 	@GetMapping("/api/checkout/config")
 	public Map<String, Object> checkoutConfig(@AuthenticationPrincipal AuthUser user) {
-		return Map.of("paymentReady", toss.isConfigured(), "clientKey", toss.clientKey(), "customerKey",
-				cipher.opaqueId("toss-customer", user.id()));
+		return Map.of("cardReady", cardReady(), "clientKey", toss.clientKey(), "customerKey",
+				cipher.opaqueId("toss-customer", user.id()), "bankReady", bank.isConfigured(), "bank",
+				Map.of("bankName", bank.bankName(), "accountNo", bank.accountNo(), "accountHolder", bank.holder(),
+						"depositHours", bank.depositWindow().toHours()));
 	}
 
 	public record PreviewRequest(@NotEmpty @Size(max = 50) @Valid List<OrderLineRequest> items) {
@@ -68,8 +83,9 @@ public class OrderController {
 	@PostMapping("/api/orders")
 	@ResponseStatus(HttpStatus.CREATED)
 	public CheckoutInfo create(@AuthenticationPrincipal AuthUser user, @Valid @RequestBody CreateOrder body) {
-		if (!toss.isConfigured()) {
-			throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "PAYMENT_NOT_READY", "결제 준비가 아직 끝나지 않았습니다.");
+		boolean ready = body.bankTransfer() ? bank.isConfigured() : cardReady();
+		if (!ready) {
+			throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "PAYMENT_NOT_READY", "선택한 결제 수단은 지금 사용할 수 없습니다.");
 		}
 		return orderService.createOrder(user, body);
 	}

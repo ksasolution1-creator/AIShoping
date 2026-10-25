@@ -53,6 +53,8 @@ export function AdminOrderDetail({ orderNo }: { orderNo: string }) {
   const statuses = new Set(order.items.map((i) => i.status));
   const canAccept = statuses.has("PAID");
   const canShip = statuses.has("PAID") || statuses.has("PREPARING");
+  const awaitingDeposit = order.status === "PENDING_PAYMENT" && order.bankDeposit !== null;
+  const pendingRefunds = order.refunds.filter((r) => r.status === "REQUESTED");
 
   return (
     <div className="flex max-w-4xl flex-col gap-5">
@@ -76,6 +78,57 @@ export function AdminOrderDetail({ orderNo }: { orderNo: string }) {
           </p>
         )}
       </div>
+
+      {/* 무통장입금: 통장에 입금된 것을 확인한 뒤 결제완료로 바꾼다 */}
+      {awaitingDeposit && order.bankDeposit && (
+        <section className="card flex flex-wrap items-center justify-between gap-3 border-warn/40 p-4 text-sm">
+          <div className="flex flex-col gap-0.5">
+            <span className="font-semibold">입금 확인 대기</span>
+            <span>
+              입금자명 <strong>{order.bankDeposit.depositorName}</strong> · 금액{" "}
+              <strong className="tabular-nums">{formatWon(order.payAmount)}</strong>
+            </span>
+            <span className="text-xs text-ink-faint">
+              {order.bankDeposit.bankName} {order.bankDeposit.accountNo}
+              {order.bankDeposit.dueAt && ` · ${formatDate(order.bankDeposit.dueAt)}까지 입금 없으면 자동 취소`}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={busy}
+            onClick={() => run(() => orderAdminApi.confirmDeposit(orderNo), "입금을 확인했습니다. 발주확인 후 상품을 준비해 주세요.")}
+          >
+            입금 확인
+          </button>
+        </section>
+      )}
+
+      {/* 무통장입금 환불: 고객 계좌로 직접 보낸 뒤 송금 완료로 표시 */}
+      {pendingRefunds.length > 0 && (
+        <section className="card flex flex-col gap-2 border-danger/30 p-4 text-sm">
+          <h2 className="font-semibold text-danger">환불 송금 필요</h2>
+          <p className="text-xs text-ink-faint">
+            고객({order.receiver.phone})에게 환불 계좌를 확인하고 아래 금액을 보낸 뒤 송금 완료를 눌러 주세요.
+          </p>
+          {pendingRefunds.map((r) => (
+            <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded bg-surface-muted p-3">
+              <span>
+                <strong className="tabular-nums">{formatWon(r.amount)}</strong>
+                <span className="text-ink-faint"> · {r.reason} · {formatDate(r.createdAt)}</span>
+              </span>
+              <button
+                type="button"
+                className="btn-outline"
+                disabled={busy}
+                onClick={() => run(() => orderAdminApi.completeRefund(orderNo, r.id), "환불 송금 완료로 표시했습니다.")}
+              >
+                송금 완료
+              </button>
+            </div>
+          ))}
+        </section>
+      )}
 
       {/* 처리 단계: 발주확인 → 송장 등록 */}
       {(canAccept || canShip) && (
@@ -211,12 +264,22 @@ export function AdminOrderDetail({ orderNo }: { orderNo: string }) {
             <span>결제 금액</span>
             <span className="tabular-nums">{formatWon(order.payAmount)}</span>
           </div>
-          {order.payment && (
+          {order.payment ? (
             <p className="text-xs text-ink-faint">
               {order.payment.easyPayProvider ?? order.payment.method} · {order.payment.status}
               {order.payment.approvedAt && ` · ${formatDate(order.payment.approvedAt)}`}
             </p>
+          ) : (
+            order.payMethod === "BANK_TRANSFER" && <p className="text-xs text-ink-faint">무통장입금 · 입금 전</p>
           )}
+          {order.refunds.map((r) => (
+            <p key={r.id} className="flex justify-between text-xs">
+              <span className="text-ink-soft">
+                환불 {r.status === "REQUESTED" ? "(송금 대기)" : "(완료)"} · {r.reason}
+              </span>
+              <span className="tabular-nums text-danger">−{formatWon(r.amount)}</span>
+            </p>
+          ))}
         </section>
       </div>
 
@@ -240,7 +303,12 @@ export function AdminOrderDetail({ orderNo }: { orderNo: string }) {
               onSubmit={async (e) => {
                 e.preventDefault();
                 const reason = String(new FormData(e.currentTarget).get("reason") ?? "").trim() || "판매자 취소";
-                if (await run(() => orderAdminApi.cancel(orderNo, reason), "주문을 취소하고 전액 환불했습니다.")) {
+                const done = awaitingDeposit
+                  ? "입금 전 주문을 취소했습니다."
+                  : order.payMethod === "BANK_TRANSFER"
+                    ? "주문을 취소했습니다. 환불 금액을 고객 계좌로 보내 주세요."
+                    : "주문을 취소하고 전액 환불했습니다.";
+                if (await run(() => orderAdminApi.cancel(orderNo, reason), done)) {
                   setCancelOpen(false);
                 }
               }}
@@ -253,7 +321,7 @@ export function AdminOrderDetail({ orderNo }: { orderNo: string }) {
                 닫기
               </button>
               <button type="submit" className="btn bg-danger text-white" disabled={busy}>
-                취소·전액 환불
+                {awaitingDeposit ? "미입금 취소" : "취소·전액 환불"}
               </button>
             </form>
           ) : (

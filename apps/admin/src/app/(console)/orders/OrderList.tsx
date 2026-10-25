@@ -9,6 +9,7 @@ import { formatDate, formatWon, ITEM_STATUS_LABEL, orderAdminApi, type OrderSumm
 
 // 처리해야 할 순서대로
 const TABS = [
+  { value: "PENDING_PAYMENT", label: "입금대기" },
   { value: "PAID", label: "신규 주문" },
   { value: "PREPARING", label: "상품준비중" },
   { value: "SHIPPED", label: "배송중" },
@@ -17,6 +18,7 @@ const TABS = [
 ];
 
 const STATUS_STYLE: Record<string, string> = {
+  PENDING_PAYMENT: "bg-danger/10 text-danger",
   PAID: "bg-info/10 text-info",
   PREPARING: "bg-warn/10 text-warn",
   SHIPPED: "bg-ok/10 text-ok",

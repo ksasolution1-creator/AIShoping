@@ -178,6 +178,18 @@ export type CheckoutInfo = {
   customerName: string;
   customerEmail: string | null;
   clientKey: string;
+  payMethod: PayMethod;
+};
+
+/** TOSS: 카드·간편결제, BANK_TRANSFER: 무통장입금 */
+export type PayMethod = "TOSS" | "BANK_TRANSFER";
+
+export type CheckoutConfig = {
+  cardReady: boolean;
+  clientKey: string;
+  customerKey: string;
+  bankReady: boolean;
+  bank: { bankName: string; accountNo: string; accountHolder: string; depositHours: number };
 };
 
 export type OrderSummary = {
@@ -223,6 +235,17 @@ export type OrderDetail = {
   shippingFee: number;
   discountTotal: number;
   payAmount: number;
+  payMethod: PayMethod;
+  /** 무통장입금 주문일 때만 */
+  bankDeposit: {
+    bankName: string;
+    accountNo: string;
+    accountHolder: string;
+    depositorName: string | null;
+    dueAt: string | null;
+  } | null;
+  /** REQUESTED: 무통장입금 환불 송금 대기, DONE: 환불 완료 */
+  refunds: { id: number; amount: number; reason: string; status: "REQUESTED" | "DONE"; createdAt: string; completedAt: string | null }[];
   payment: {
     method: string | null;
     easyPayProvider: string | null;
@@ -305,8 +328,7 @@ export const cartApi = {
 };
 
 export const orderApi = {
-  config: () =>
-    apiRequest<{ paymentReady: boolean; clientKey: string; customerKey: string }>("/api/checkout/config"),
+  config: () => apiRequest<CheckoutConfig>("/api/checkout/config"),
   preview: (items: OrderLine[]) =>
     apiRequest<Preview>("/api/checkout/preview", { method: "POST", body: JSON.stringify({ items }) }),
   create: (body: {
@@ -317,6 +339,8 @@ export const orderApi = {
     address1: string;
     address2: string;
     deliveryMemo: string;
+    payMethod: PayMethod;
+    depositorName?: string;
   }) => apiRequest<CheckoutInfo>("/api/orders", { method: "POST", body: JSON.stringify(body) }),
   confirm: (paymentKey: string, orderId: string, amount: number) =>
     apiRequest<OrderDetail>("/api/payments/confirm", {
@@ -395,7 +419,7 @@ export const communityApi = {
 
 /** 주문 상품 상태 이름 */
 export const ITEM_STATUS_LABEL: Record<string, string> = {
-  PENDING_PAYMENT: "결제대기",
+  PENDING_PAYMENT: "입금대기",
   PAID: "결제완료",
   PREPARING: "상품준비중",
   SHIPPED: "배송중",

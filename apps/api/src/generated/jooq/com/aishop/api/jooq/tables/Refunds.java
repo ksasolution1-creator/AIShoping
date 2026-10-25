@@ -119,6 +119,11 @@ public class Refunds extends TableImpl<RefundsRecord> {
      */
     public final TableField<RefundsRecord, OffsetDateTime> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6).nullable(false).defaultValue(DSL.field(DSL.raw("now()"), SQLDataType.TIMESTAMPWITHTIMEZONE)), this, "");
 
+    /**
+     * The column <code>public.refunds.completed_at</code>.
+     */
+    public final TableField<RefundsRecord, OffsetDateTime> COMPLETED_AT = createField(DSL.name("completed_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
+
     private Refunds(Name alias, Table<RefundsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

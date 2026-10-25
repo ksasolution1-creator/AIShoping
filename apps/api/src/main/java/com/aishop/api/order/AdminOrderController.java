@@ -22,7 +22,7 @@ import com.aishop.api.order.OrderViews.OrderSummary;
 import com.aishop.api.order.OrderViews.ShipOrder;
 import com.aishop.api.payment.PaymentService;
 
-/** 운영자 주문 처리: 조회 → 발주확인 → 송장 등록(출고) / 취소 */
+/** 운영자 주문 처리: 조회 → (무통장입금 확인) → 발주확인 → 송장 등록(출고) / 취소 */
 @RestController
 @RequestMapping("/api/admin")
 public class AdminOrderController {
@@ -46,6 +46,21 @@ public class AdminOrderController {
 
 	@GetMapping("/orders/{orderNo}")
 	public OrderDetail detail(@PathVariable String orderNo, HttpServletRequest request) {
+		return orderService.sellerOrder(admin.user(), admin.sellerId(), orderNo, request.getRemoteAddr());
+	}
+
+	/** 회사 계좌에 입금된 것을 확인하고 결제완료로 바꾼다 */
+	@PostMapping("/orders/{orderNo}/confirm-deposit")
+	public OrderDetail confirmDeposit(@PathVariable String orderNo, HttpServletRequest request) {
+		paymentService.confirmDeposit(admin.sellerId(), orderNo);
+		return orderService.sellerOrder(admin.user(), admin.sellerId(), orderNo, request.getRemoteAddr());
+	}
+
+	/** 무통장입금 환불을 고객 계좌로 보낸 뒤 송금 완료로 표시한다 */
+	@PostMapping("/orders/{orderNo}/refunds/{refundId}/complete")
+	public OrderDetail completeRefund(@PathVariable String orderNo, @PathVariable long refundId,
+			HttpServletRequest request) {
+		paymentService.completeManualRefund(admin.sellerId(), orderNo, refundId);
 		return orderService.sellerOrder(admin.user(), admin.sellerId(), orderNo, request.getRemoteAddr());
 	}
 

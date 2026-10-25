@@ -180,6 +180,21 @@ public class Orders extends TableImpl<OrdersRecord> {
      */
     public final TableField<OrdersRecord, OffsetDateTime> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6).nullable(false).defaultValue(DSL.field(DSL.raw("now()"), SQLDataType.TIMESTAMPWITHTIMEZONE)), this, "");
 
+    /**
+     * The column <code>public.orders.pay_method</code>.
+     */
+    public final TableField<OrdersRecord, String> PAY_METHOD = createField(DSL.name("pay_method"), SQLDataType.CLOB.nullable(false).defaultValue(DSL.field(DSL.raw("'TOSS'::text"), SQLDataType.CLOB)), this, "");
+
+    /**
+     * The column <code>public.orders.depositor_name</code>.
+     */
+    public final TableField<OrdersRecord, String> DEPOSITOR_NAME = createField(DSL.name("depositor_name"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.orders.deposit_due_at</code>.
+     */
+    public final TableField<OrdersRecord, OffsetDateTime> DEPOSIT_DUE_AT = createField(DSL.name("deposit_due_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
+
     private Orders(Name alias, Table<OrdersRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -249,7 +264,7 @@ public class Orders extends TableImpl<OrdersRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IX_ORDERS_PENDING, Indexes.IX_ORDERS_STATUS, Indexes.IX_ORDERS_USER, Indexes.UX_ORDERS_EXTERNAL);
+        return Arrays.asList(Indexes.IX_ORDERS_DEPOSIT_DUE, Indexes.IX_ORDERS_PENDING, Indexes.IX_ORDERS_STATUS, Indexes.IX_ORDERS_USER, Indexes.UX_ORDERS_EXTERNAL);
     }
 
     @Override
@@ -330,6 +345,7 @@ public class Orders extends TableImpl<OrdersRecord> {
             Internal.createCheck(this, DSL.name("orders_discount_total_check"), "((discount_total >= 0))", true),
             Internal.createCheck(this, DSL.name("orders_items_total_check"), "((items_total >= 0))", true),
             Internal.createCheck(this, DSL.name("orders_pay_amount_check"), "((pay_amount >= 0))", true),
+            Internal.createCheck(this, DSL.name("orders_pay_method_check"), "((pay_method = ANY (ARRAY['TOSS'::text, 'BANK_TRANSFER'::text])))", true),
             Internal.createCheck(this, DSL.name("orders_shipping_fee_check"), "((shipping_fee >= 0))", true),
             Internal.createCheck(this, DSL.name("orders_status_check"), "((status = ANY (ARRAY['PENDING_PAYMENT'::text, 'PAID'::text, 'COMPLETED'::text, 'CANCELLED'::text])))", true)
         );

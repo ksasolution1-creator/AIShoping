@@ -13,8 +13,10 @@ import {
   ClientApiError,
   loginUrl,
   orderApi,
+  type CheckoutConfig,
   type Me,
   type OrderLine,
+  type PayMethod,
   type Preview,
 } from "@/lib/client-api";
 import { formatWon } from "@/lib/format";
@@ -43,7 +45,9 @@ export function CheckoutForm() {
 
   const [me, setMe] = useState<Me | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
-  const [paymentReady, setPaymentReady] = useState<boolean | null>(null);
+  const [config, setConfig] = useState<CheckoutConfig | null>(null);
+  const [method, setMethod] = useState<PayMethod>("BANK_TRANSFER");
+  const [agreed, setAgreed] = useState(false);
   const [widgetsReady, setWidgetsReady] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [message, setMessage] = useState<string | null>(null);
@@ -59,7 +63,7 @@ export function CheckoutForm() {
     requestAnimationFrame(() => document.getElementById("address2")?.focus());
   }, []);
 
-  // 1) 로그인 확인 → 주문 미리보기(서버 금액) → 결제위젯 준비
+  // 1) 로그인 확인 → 주문 미리보기(서버 금액) → 결제 수단 준비 (카드를 켠 경우에만 결제위젯)
   useEffect(() => {
     if (lines.length === 0) return;
     let cancelled = false;
@@ -74,8 +78,9 @@ export function CheckoutForm() {
         if (cancelled) return;
         setMe(user);
         setPreview(priced);
-        setPaymentReady(config.paymentReady);
-        if (!config.paymentReady || !priced.allPurchasable) return;
+        setConfig(config);
+        setMethod(config.bankReady ? "BANK_TRANSFER" : "TOSS");
+        if (!config.cardReady || !priced.allPurchasable) return;
 
         const toss = await loadTossPayments(config.clientKey);
         const widgets = toss.widgets({ customerKey: config.customerKey });
@@ -96,11 +101,12 @@ export function CheckoutForm() {
     };
   }, [lines, router]);
 
-  // 2) 결제하기: 서버에 주문을 만들고(재고 예약·금액 확정) 결제창을 띄운다
+  // 2) 주문하기: 서버에 주문을 만들고(재고 예약·금액 확정)
+  //    무통장입금은 입금 안내가 있는 주문 상세로, 카드는 결제창을 띄운다
   async function pay(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const widgets = widgetsRef.current;
-    if (!widgets || !preview) return;
+    if (!preview || (method === "TOSS" && !widgets)) return;
     const form = new FormData(event.currentTarget);
     const value = (key: string) => String(form.get(key) ?? "").trim();
 
@@ -117,7 +123,13 @@ export function CheckoutForm() {
         address1: value("address1"),
         address2: value("address2"),
         deliveryMemo: value("deliveryMemo"),
+        payMethod: method,
+        depositorName: method === "BANK_TRANSFER" ? value("depositorName") : undefined,
       });
+      if (method === "BANK_TRANSFER" || !widgets) {
+        router.replace(`/orders/${checkout.orderNo}?placed=1`);
+        return;
+      }
       orderNo = checkout.orderNo;
       if (checkout.amount !== preview.payAmount) {
         // 그사이 가격·배송비가 바뀐 경우 서버 금액으로 결제한다
@@ -235,10 +247,8 @@ export function CheckoutForm() {
 
         <section className="flex flex-col gap-3">
           <h2 className="border-b border-ink pb-2 font-bold">결제 수단</h2>
-          {paymentReady === false ? (
-            <p className="rounded-md bg-surface-muted p-4 text-sm text-ink-soft">
-              결제 준비가 아직 끝나지 않았습니다. (토스페이먼츠 키 설정 필요)
-            </p>
+          {config && !config.bankReady && !config.cardReady ? (
+            <p className="rounded-md bg-surface-muted p-4 text-sm text-ink-soft">결제 준비가 아직 끝나지 않았습니다.</p>
           ) : !preview.allPurchasable ? (
             <div className="rounded-md bg-sale/10 p-4 text-sm text-sale">
               {preview.notices.length > 0 ? (
@@ -254,8 +264,65 @@ export function CheckoutForm() {
             </div>
           ) : (
             <>
-              <div id="payment-method" />
-              <div id="agreement" />
+              {config?.bankReady && config.cardReady && (
+                <div role="radiogroup" aria-label="결제 수단" className="grid grid-cols-2 gap-2">
+                  {(
+                    [
+                      ["BANK_TRANSFER", "무통장입금"],
+                      ["TOSS", "카드·간편결제"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={method === value}
+                      onClick={() => setMethod(value)}
+                      className={`h-11 rounded-md border text-sm font-medium ${
+                        method === value ? "border-brand bg-brand/5 text-brand" : "border-line text-ink-soft"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {method === "BANK_TRANSFER" && config?.bankReady && (
+                <div className="flex flex-col gap-4 rounded-md border border-line p-4 text-sm">
+                  <dl className="grid grid-cols-[5rem_1fr] gap-y-1">
+                    <dt className="text-ink-soft">입금 계좌</dt>
+                    <dd className="font-semibold">
+                      {config.bank.bankName} <span className="font-mono tabular-nums">{config.bank.accountNo}</span>
+                    </dd>
+                    <dt className="text-ink-soft">예금주</dt>
+                    <dd>{config.bank.accountHolder}</dd>
+                  </dl>
+                  <TextField
+                    id="depositorName"
+                    label="입금자명"
+                    defaultValue={me.name}
+                    maxLength={20}
+                    error={errors.depositorName}
+                  />
+                  <p className="text-xs leading-relaxed text-ink-faint">
+                    주문 후 {config.bank.depositHours}시간 안에 주문 금액을 위 계좌로 보내 주세요. 입금이 확인되면 상품
+                    준비를 시작합니다. 기한 안에 입금하지 않으면 주문이 자동으로 취소됩니다.
+                  </p>
+                  <label className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={agreed}
+                      onChange={(e) => setAgreed(e.target.checked)}
+                      className="mt-0.5 size-4 accent-brand"
+                    />
+                    <span>주문 상품, 금액, 배송 정보를 확인했으며 구매에 동의합니다.</span>
+                  </label>
+                </div>
+              )}
+              <div hidden={method !== "TOSS"}>
+                <div id="payment-method" />
+                <div id="agreement" />
+              </div>
             </>
           )}
         </section>
@@ -287,16 +354,28 @@ export function CheckoutForm() {
             {message}
           </p>
         )}
-        <button
-          type="submit"
-          disabled={!widgetsReady || submitting}
-          className="h-12 rounded-md bg-brand font-semibold text-white hover:bg-brand-strong disabled:opacity-40"
-        >
-          {submitting ? "결제 진행 중…" : `${formatWon(preview.payAmount)} 결제하기`}
-        </button>
-        <p className="text-xs leading-relaxed text-ink-faint">
-          결제창을 띄운 뒤 30분 안에 결제하지 않으면 주문이 자동으로 취소됩니다.
-        </p>
+        {method === "BANK_TRANSFER" ? (
+          <button
+            type="submit"
+            disabled={!config?.bankReady || !preview.allPurchasable || !agreed || submitting}
+            className="h-12 rounded-md bg-brand font-semibold text-white hover:bg-brand-strong disabled:opacity-40"
+          >
+            {submitting ? "주문하는 중…" : `${formatWon(preview.payAmount)} 주문하기`}
+          </button>
+        ) : (
+          <>
+            <button
+              type="submit"
+              disabled={!widgetsReady || submitting}
+              className="h-12 rounded-md bg-brand font-semibold text-white hover:bg-brand-strong disabled:opacity-40"
+            >
+              {submitting ? "결제 진행 중…" : `${formatWon(preview.payAmount)} 결제하기`}
+            </button>
+            <p className="text-xs leading-relaxed text-ink-faint">
+              결제창을 띄운 뒤 30분 안에 결제하지 않으면 주문이 자동으로 취소됩니다.
+            </p>
+          </>
+        )}
       </aside>
     </form>
   );

@@ -64,6 +64,16 @@ aishop:
     # 토스페이먼츠 개발자센터 > API 키 (테스트 키로 개발)
     client-key: ${TOSS_CLIENT_KEY:}
     secret-key: ${TOSS_SECRET_KEY:}
+  payment:
+    # 카드·간편결제(토스) 사용 여부. 꺼 두면 무통장입금만 받는다
+    card-enabled: ${CARD_PAYMENT_ENABLED:false}
+  bank:
+    # 무통장입금 받을 계좌. 주문서·주문 상세에 고객에게 보여준다
+    name: ${BANK_NAME:기업은행}
+    account-no: ${BANK_ACCOUNT_NO:478-083872-04-017}
+    holder: ${BANK_ACCOUNT_HOLDER:(주)케이에스에이솔루션}
+    # 주문 후 이 시간 안에 입금하지 않으면 자동 취소하고 재고를 푼다
+    deposit-hours: ${BANK_DEPOSIT_HOURS:48}
   social:
     # 간편로그인 콜백 주소의 앞부분 (쇼핑몰 주소). 각 개발자센터에 {이 값}/api/auth/social/{kakao|naver}/callback 을 등록한다
     redirect-base: ${SHOP_URL:http://localhost:3000}

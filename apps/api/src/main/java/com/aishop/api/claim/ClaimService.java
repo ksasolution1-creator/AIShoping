@@ -27,9 +27,9 @@ import com.aishop.api.jooq.tables.records.OrdersRecord;
 import com.aishop.api.jooq.tables.records.PaymentsRecord;
 import com.aishop.api.jooq.tables.records.SkusRecord;
 import com.aishop.api.order.OrderRepository;
-import com.aishop.api.payment.TossPaymentsClient;
+import com.aishop.api.payment.Refunder;
+import com.aishop.api.payment.Refunder.Refunded;
 import com.aishop.api.payment.TossPaymentsClient.TossApiException;
-import com.aishop.api.payment.TossPaymentsClient.TossPayment;
 
 /**
  * 상품별 취소와 반품.
@@ -54,15 +54,15 @@ public class ClaimService {
 	private final OrderRepository orders;
 	private final ProductRepository products;
 	private final InventoryRepository inventory;
-	private final TossPaymentsClient toss;
+	private final Refunder refunder;
 
 	public ClaimService(ClaimRepository claims, OrderRepository orders, ProductRepository products,
-			InventoryRepository inventory, TossPaymentsClient toss) {
+			InventoryRepository inventory, Refunder refunder) {
 		this.claims = claims;
 		this.orders = orders;
 		this.products = products;
 		this.inventory = inventory;
-		this.toss = toss;
+		this.refunder = refunder;
 	}
 
 	// ------------------------------------------------------------------
@@ -333,16 +333,16 @@ public class ClaimService {
 			return 0;
 		}
 		String idempotencyKey = "claim-" + claimId;
-		TossPayment canceled;
+		Refunded refunded;
 		try {
-			canceled = toss.cancel(payment.getPaymentKey(), reason, refundable, idempotencyKey);
+			refunded = refunder.refund(payment, reason, refundable, idempotencyKey);
 		}
 		catch (TossApiException ex) {
 			throw new ApiException(HttpStatus.BAD_GATEWAY, "REFUND_FAILED", "환불하지 못했습니다: " + ex.getMessage());
 		}
-		claims.insertRefund(payment.getId(), claimId, refundable, reason, idempotencyKey, canceled.lastTransactionKey(),
-				canceled.raw());
-		orders.updatePayment(payment.getId(), canceled.status(), canceled.balanceAmount(), canceled.raw());
+		claims.insertRefund(payment.getId(), claimId, refundable, reason, idempotencyKey, refunded.refundStatus(),
+				refunded.transactionKey(), refunded.raw());
+		orders.updatePayment(payment.getId(), refunded.paymentStatus(), refunded.balanceAmount(), refunded.raw());
 		return refundable;
 	}
 

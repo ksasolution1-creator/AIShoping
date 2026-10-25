@@ -2,6 +2,7 @@ package com.aishop.api.order;
 
 import java.security.SecureRandom;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ import com.aishop.api.inventory.InventoryRepository;
 import com.aishop.api.jooq.tables.records.OrderItemsRecord;
 import com.aishop.api.jooq.tables.records.OrdersRecord;
 import com.aishop.api.order.OrderRepository.CarrierOption;
+import com.aishop.api.order.OrderViews.BankDeposit;
 import com.aishop.api.order.OrderViews.CheckoutInfo;
 import com.aishop.api.order.OrderViews.CreateOrder;
 import com.aishop.api.order.OrderViews.OrderDetail;
@@ -32,7 +34,10 @@ import com.aishop.api.order.OrderViews.OrderLineView;
 import com.aishop.api.order.OrderViews.OrderSummary;
 import com.aishop.api.order.OrderViews.PaymentView;
 import com.aishop.api.order.OrderViews.Receiver;
+import com.aishop.api.order.OrderViews.RefundView;
 import com.aishop.api.order.OrderViews.ShipmentView;
+import com.aishop.api.payment.BankAccount;
+import com.aishop.api.payment.Refunder;
 import com.aishop.api.payment.TossPaymentsClient;
 
 @Service
@@ -54,11 +59,12 @@ public class OrderService {
 	private final ClaimService claimService;
 	private final WholesalePricing wholesale;
 	private final BusinessRepository business;
+	private final BankAccount bank;
 	private final SecureRandom random = new SecureRandom();
 
 	public OrderService(OrderRepository orders, PurchaseLineRepository purchaseLines, InventoryRepository inventory,
 			FieldCipher cipher, TossPaymentsClient toss, ClaimService claimService, WholesalePricing wholesale,
-			BusinessRepository business) {
+			BusinessRepository business, BankAccount bank) {
 		this.orders = orders;
 		this.purchaseLines = purchaseLines;
 		this.inventory = inventory;
@@ -67,6 +73,7 @@ public class OrderService {
 		this.claimService = claimService;
 		this.wholesale = wholesale;
 		this.business = business;
+		this.bank = bank;
 	}
 
 	// ------------------------------------------------------------------
@@ -75,7 +82,7 @@ public class OrderService {
 
 	/**
 	 * 결제 대기 주문을 만들고 재고를 예약한다. 금액은 서버가 계산한 값만 쓴다.
-	 * 결제창은 여기서 돌려준 orderNo와 amount로 띄운다.
+	 * 카드는 여기서 돌려준 orderNo와 amount로 결제창을 띄우고, 무통장입금은 입금 기한까지 재고를 잡아 둔다.
 	 */
 	@Transactional
 	public CheckoutInfo createOrder(AuthUser user, CreateOrder request) {
@@ -126,6 +133,12 @@ public class OrderService {
 		order.setDiscountTotal(summary.discountTotal());
 		order.setPayAmount(summary.payAmount());
 		order.setStatus("PENDING_PAYMENT");
+		if (request.bankTransfer()) {
+			String depositor = blankToNull(request.depositorName());
+			order.setPayMethod(Refunder.BANK_TRANSFER);
+			order.setDepositorName(depositor == null ? user.name() : depositor);
+			order.setDepositDueAt(OffsetDateTime.now().plus(bank.depositWindow()));
+		}
 		long orderId = orders.insertOrder(order);
 
 		for (PurchaseLine line : lines) {
@@ -144,9 +157,14 @@ public class OrderService {
 			item.setFulfillLocationId(locationId);
 			orders.insertOrderItem(item);
 		}
+		if (request.bankTransfer()) {
+			// 주문이 끝났으니 입금 전이라도 장바구니에서 뺀다 (카드는 결제 승인 때 뺀다)
+			orders.deleteCartItems(user.id(), lines.stream().map(PurchaseLine::skuId).toList());
+		}
 
 		return new CheckoutInfo(orderNo, orderName(lines.getFirst().productName(), lines.size()), summary.payAmount(),
-				cipher.opaqueId("toss-customer", user.id()), user.name(), user.email(), toss.clientKey());
+				cipher.opaqueId("toss-customer", user.id()), user.name(), user.email(), toss.clientKey(),
+				request.bankTransfer() ? Refunder.BANK_TRANSFER : "TOSS");
 	}
 
 	/**
@@ -334,7 +352,9 @@ public class OrderService {
 	OrdersRecord requireSellerOrder(long sellerId, String orderNo) {
 		OrdersRecord order = orders.findByOrderNo(orderNo).orElseThrow(() -> ApiException.notFound("주문"));
 		boolean mine = orders.findItems(order.getId()).stream().anyMatch(i -> i.getSellerId() == sellerId);
-		if (!mine || "PENDING_PAYMENT".equals(order.getStatus())) {
+		// 카드 결제 대기 주문은 결제창을 띄우다 만 것이라 운영자에게 보이지 않는다 (무통장입금 대기는 보인다)
+		boolean cardPending = "PENDING_PAYMENT".equals(order.getStatus()) && !isBankTransfer(order);
+		if (!mine || cardPending) {
 			throw ApiException.notFound("주문");
 		}
 		return order;
@@ -383,17 +403,30 @@ public class OrderService {
 		Receiver receiver = new Receiver(order.getReceiverName(), cipher.decrypt(order.getReceiverPhoneEnc()),
 				order.getReceiverZipcode(), cipher.decrypt(order.getReceiverAddress1Enc()),
 				cipher.decrypt(order.getReceiverAddress2Enc()), order.getDeliveryMemo());
-		boolean cancellable = !items.isEmpty() && items.stream().allMatch(i -> cancellableStatuses.contains(i.getStatus()));
+		// 입금 전 무통장입금 주문은 고객·운영자 모두 바로 취소할 수 있다 (환불할 돈이 없다)
+		Set<String> cancellableNow = isBankTransfer(order) && "PENDING_PAYMENT".equals(order.getStatus())
+				? Set.of("PENDING_PAYMENT") : cancellableStatuses;
+		boolean cancellable = !items.isEmpty() && items.stream().allMatch(i -> cancellableNow.contains(i.getStatus()));
+		BankDeposit bankDeposit = isBankTransfer(order) ? new BankDeposit(bank.bankName(), bank.accountNo(),
+				bank.holder(), order.getDepositorName(), order.getDepositDueAt()) : null;
+		List<RefundView> refunds = orders.findRefunds(order.getId()).stream()
+			.map(r -> new RefundView(r.getId(), r.getAmount(), r.getReason(), r.getStatus(), r.getCreatedAt(),
+					r.getCompletedAt()))
+			.toList();
 		return new OrderDetail(order.getOrderNo(), order.getChannel(), order.getOrderedAt(), order.getPaidAt(),
 				order.getStatus(), order.getOrdererName(), order.getOrdererEmail(), receiver, lines,
-				order.getItemsTotal(), order.getShippingFee(), order.getDiscountTotal(), order.getPayAmount(), payment,
-				shipments, cancellable, claimsOf(order, items));
+				order.getItemsTotal(), order.getShippingFee(), order.getDiscountTotal(), order.getPayAmount(),
+				order.getPayMethod(), bankDeposit, payment, refunds, shipments, cancellable, claimsOf(order, items));
 	}
 
 	/** 화면에 보이는 주문상품(판매자 화면이면 그 판매자 상품)의 취소·반품 내역 */
 	private List<ClaimView> claimsOf(OrdersRecord order, List<OrderItemsRecord> visibleItems) {
 		Set<Long> itemIds = new java.util.HashSet<>(visibleItems.stream().map(OrderItemsRecord::getId).toList());
 		return claimService.orderClaims(order.getId()).stream().filter(c -> itemIds.contains(c.orderItemId())).toList();
+	}
+
+	private static boolean isBankTransfer(OrdersRecord order) {
+		return Refunder.BANK_TRANSFER.equals(order.getPayMethod());
 	}
 
 	private static String normalizePhone(String phone) {

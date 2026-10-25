@@ -263,6 +263,11 @@ export type OrderDetail = {
   discountTotal: number;
   shippingFee: number;
   payAmount: number;
+  payMethod: "TOSS" | "BANK_TRANSFER";
+  /** 무통장입금 주문일 때만 */
+  bankDeposit: { bankName: string; accountNo: string; accountHolder: string; depositorName: string | null; dueAt: string | null } | null;
+  /** REQUESTED: 고객 계좌로 직접 송금해야 하는 환불, DONE: 환불 완료 */
+  refunds: { id: number; amount: number; reason: string; status: "REQUESTED" | "DONE"; createdAt: string; completedAt: string | null }[];
   payment: { method: string | null; easyPayProvider: string | null; amount: number; balanceAmount: number; status: string; approvedAt: string | null } | null;
   shipments: { id: number; carrierName: string; trackingNo: string; status: string; shippedAt: string | null }[];
   cancellable: boolean;
@@ -271,7 +276,7 @@ export type OrderDetail = {
 export type Carrier = { id: number; code: string; name: string };
 
 export const ITEM_STATUS_LABEL: Record<string, string> = {
-  PENDING_PAYMENT: "결제대기",
+  PENDING_PAYMENT: "입금대기",
   PAID: "결제완료",
   PREPARING: "상품준비중",
   SHIPPED: "배송중",
@@ -291,6 +296,10 @@ export const orderAdminApi = {
     return request<Page<OrderSummary>>(`/api/admin/orders?${search}`);
   },
   detail: (orderNo: string) => request<OrderDetail>(`/api/admin/orders/${orderNo}`),
+  confirmDeposit: (orderNo: string) =>
+    request<OrderDetail>(`/api/admin/orders/${orderNo}/confirm-deposit`, { method: "POST" }),
+  completeRefund: (orderNo: string, refundId: number) =>
+    request<OrderDetail>(`/api/admin/orders/${orderNo}/refunds/${refundId}/complete`, { method: "POST" }),
   accept: (orderNo: string) => request<OrderDetail>(`/api/admin/orders/${orderNo}/accept`, { method: "POST" }),
   ship: (orderNo: string, carrierId: number, trackingNo: string) =>
     request<OrderDetail>(`/api/admin/orders/${orderNo}/ship`, {

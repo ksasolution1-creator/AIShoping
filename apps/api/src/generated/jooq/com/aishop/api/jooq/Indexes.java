@@ -64,6 +64,7 @@ public class Indexes {
     public static final Index IX_ORDER_ITEMS_SELLER_STATUS = Internal.createIndex(DSL.name("ix_order_items_seller_status"), OrderItems.ORDER_ITEMS, new OrderField[] { OrderItems.ORDER_ITEMS.SELLER_ID, OrderItems.ORDER_ITEMS.STATUS, OrderItems.ORDER_ITEMS.CREATED_AT.desc() }, false);
     public static final Index IX_ORDER_ITEMS_SKU = Internal.createIndex(DSL.name("ix_order_items_sku"), OrderItems.ORDER_ITEMS, new OrderField[] { OrderItems.ORDER_ITEMS.SKU_ID }, false);
     public static final Index IX_ORDER_ITEMS_SKU_CREATED = Internal.createIndex(DSL.name("ix_order_items_sku_created"), OrderItems.ORDER_ITEMS, new OrderField[] { OrderItems.ORDER_ITEMS.SKU_ID, OrderItems.ORDER_ITEMS.CREATED_AT }, false);
+    public static final Index IX_ORDERS_DEPOSIT_DUE = Internal.createIndex(DSL.name("ix_orders_deposit_due"), Orders.ORDERS, new OrderField[] { Orders.ORDERS.DEPOSIT_DUE_AT }, false);
     public static final Index IX_ORDERS_PENDING = Internal.createIndex(DSL.name("ix_orders_pending"), Orders.ORDERS, new OrderField[] { Orders.ORDERS.CREATED_AT }, false);
     public static final Index IX_ORDERS_STATUS = Internal.createIndex(DSL.name("ix_orders_status"), Orders.ORDERS, new OrderField[] { Orders.ORDERS.STATUS, Orders.ORDERS.ORDERED_AT.desc() }, false);
     public static final Index IX_ORDERS_USER = Internal.createIndex(DSL.name("ix_orders_user"), Orders.ORDERS, new OrderField[] { Orders.ORDERS.USER_ID, Orders.ORDERS.ORDERED_AT.desc() }, false);
