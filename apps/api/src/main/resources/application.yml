@@ -100,6 +100,10 @@ aishop:
     admin-url: ${ADMIN_URL:http://localhost:3001}
     # 입금 기한 이 시간 전까지 확인 안 된 주문을 운영자에게 알린다
     deposit-remind-before-hours: ${DEPOSIT_REMIND_BEFORE_HOURS:6}
+  ai:
+    # 사진으로 상품 정보 자동 입력 (Claude API). 키를 비우면 기능이 꺼진다
+    api-key: ${ANTHROPIC_API_KEY:}
+    model: ${AI_MODEL:claude-opus-5-5}
   social:
     # 간편로그인 콜백 주소의 앞부분 (쇼핑몰 주소). 각 개발자센터에 {이 값}/api/auth/social/{kakao|naver}/callback 을 등록한다
     redirect-base: ${SHOP_URL:http://localhost:3000}

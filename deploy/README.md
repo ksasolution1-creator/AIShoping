@@ -51,6 +51,7 @@ docker compose logs -f caddy  # 인증서 발급 확인 (certificate obtained)
 - `TOSS_CLIENT_KEY`, `TOSS_SECRET_KEY`: 테스트 서버는 토스 테스트 키. 카드 결제는 `CARD_PAYMENT_ENABLED=true`일 때만 열린다
 - `BANK_*`: 무통장입금 계좌와 입금 기한. 비우면 기본값(기업은행 회사 계좌, 48시간)을 쓴다
 - `MAIL_*`: 알림 메일 SMTP. 비우면 메일 없이 동작한다. 운영자 알림은 `NOTIFY_ADMIN_EMAIL`(기본 kmh@ksas.co.kr)로 간다
+- `ANTHROPIC_API_KEY`: 상품 등록 화면의 '사진으로 자동 입력'(Claude API). https://console.anthropic.com → API Keys에서 발급하고 결제 수단을 등록한다. 비우면 버튼이 꺼지고 사진 등록만 된다. 상품 1건(사진 3~6장)에 대략 100~150원 (Claude Opus 5.5 기준)
 
 ### 간편로그인 (카카오·네이버)
 

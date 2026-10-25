@@ -1,6 +1,7 @@
 "use client";
 
 import { loadTossPayments, type TossPaymentsWidgets } from "@tosspayments/tosspayments-sdk";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -162,7 +163,19 @@ export function CheckoutForm() {
   }
 
   if (lines.length === 0) {
-    return <p className="text-sm text-ink-faint">주문할 상품이 없습니다.</p>;
+    return (
+      <div className="flex flex-col items-start gap-3 text-sm text-ink-faint">
+        <p>주문할 상품이 없습니다.</p>
+        <div className="flex gap-3">
+          <Link href="/cart" className="text-brand underline underline-offset-4">
+            장바구니 보기
+          </Link>
+          <Link href="/" className="text-brand underline underline-offset-4">
+            상품 둘러보기
+          </Link>
+        </div>
+      </div>
+    );
   }
   if (!preview || !me) {
     return message ? <p className="text-sm text-sale">{message}</p> : <WhaleLoader label="주문서를 준비하는 중이에요" />;

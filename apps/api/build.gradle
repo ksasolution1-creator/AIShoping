@@ -57,6 +57,8 @@ dependencies {
 	implementation 'org.jooq:jooq-postgres-extensions'
 	// 송장 엑셀 내려받기·올리기
 	implementation 'org.apache.poi:poi-ooxml:5.4.1'
+	// 사진으로 상품 정보 초안 만들기 (Claude API)
+	implementation 'com.anthropic:anthropic-java:2.34.0'
 	runtimeOnly 'org.postgresql:postgresql'
 
 	jooqCodegen 'org.postgresql:postgresql:42.7.14'

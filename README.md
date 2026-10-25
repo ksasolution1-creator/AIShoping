@@ -39,6 +39,9 @@ pnpm dev:admin                # 관리자  http://localhost:3001
 | `POST /api/admin/skus/{skuId}/stock-adjustments` | 재고 수동 조정 (원장 기록) |
 | `POST/DELETE /api/admin/products/{id}/images[/{imageId}]` | 사진 업로드·삭제 (`skuId` 지정 시 상태등급 실물 사진) |
 | `POST /api/admin/categories` | 카테고리 추가 |
+| `GET/POST /api/admin/products/ai-draft` | 사진으로 상품 정보 초안 만들기 (Claude, 저장하지 않음). GET은 사용 가능 여부 |
+| `GET /api/admin/members[/{id}]`, `POST .../{id}/status` | 회원 목록(검색·가입 방법·가입일 필터)·상세(연락처 열람 기록)·이용 정지/해제 |
+| `GET/POST /api/admin/staff`, `PATCH /api/admin/staff/{id}`, `POST .../{id}/password` | 운영자 계정 추가·권한·정지·비밀번호 초기화 (관리자만) |
 
 | `GET/POST/PATCH/DELETE /api/cart[/items]` | 장바구니 조회·담기·수량 변경·삭제 |
 | `POST /api/checkout/preview`, `GET /api/checkout/config` | 주문서 금액 미리보기, 결제위젯 설정 |

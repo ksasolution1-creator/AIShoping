@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { AiPhotoDraft, type DraftPhoto } from "@/components/AiPhotoDraft";
 import {
   draftToFields,
   emptyDraft,
@@ -17,7 +18,7 @@ import {
   validateSkuDraft,
   type SkuDraft,
 } from "@/components/SkuDraftRow";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, type AiDraft } from "@/lib/api";
 
 export function NewProductForm() {
   const router = useRouter();
@@ -27,6 +28,45 @@ export function NewProductForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [photos, setPhotos] = useState<DraftPhoto[]>([]);
+
+  /** 사진 분석 결과로 기본 정보와 첫 SKU를 채운다. 판매가·재고는 운영자가 넣는다 */
+  function applyAiDraft(ai: AiDraft) {
+    setDraft((d) => {
+      const notice = [...d.notice];
+      for (const item of ai.notice) {
+        const existing = notice.findIndex((n) => n.key === item.key);
+        if (existing >= 0) notice[existing] = { ...notice[existing], value: item.value };
+        else notice.push({ key: item.key, value: item.value });
+      }
+      return {
+        ...d,
+        name: ai.name || d.name,
+        brand: ai.brand || d.brand,
+        modelName: ai.modelName || d.modelName,
+        categoryId: ai.categoryId ? String(ai.categoryId) : d.categoryId,
+        description: ai.description || d.description,
+        kcCertNo: ai.kcCertNo || d.kcCertNo,
+        notice,
+      };
+    });
+    setSkus((list) =>
+      list.map((sku, i) =>
+        i !== 0
+          ? sku
+          : {
+              ...sku,
+              conditionGrade: ai.conditionGrade ?? sku.conditionGrade,
+              conditionNote: ai.conditionNote || sku.conditionNote,
+              options: ai.options || sku.options,
+              barcode: ai.barcode || sku.barcode,
+              listPrice: ai.listPrice ? String(ai.listPrice) : sku.listPrice,
+            },
+      ),
+    );
+    setErrors({});
+    setSkuErrors({});
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -49,7 +89,17 @@ export function NewProductForm() {
         product: draftToFields(draft),
         skus: skus.map(skuDraftToRequest),
       });
-      router.push(`/products/${id}?created=1`);
+      // 상품은 이미 저장됐으므로 사진이 일부 실패해도 상세 화면으로 넘어가 다시 올리게 한다
+      let photoFailed = 0;
+      for (const [i, photo] of photos.entries()) {
+        setMessage(`사진 올리는 중… (${i + 1}/${photos.length})`);
+        try {
+          await api.uploadImage(id, new File([photo.blob], `photo-${i + 1}.jpg`, { type: "image/jpeg" }), null);
+        } catch {
+          photoFailed++;
+        }
+      }
+      router.push(`/products/${id}?created=1${photoFailed ? `&photoFailed=${photoFailed}` : ""}`);
     } catch (e) {
       if (e instanceof ApiError) {
         setErrors(e.fieldErrors);
@@ -71,6 +121,8 @@ export function NewProductForm() {
           <h1 className="text-xl font-bold">상품 등록</h1>
         </div>
       </div>
+
+      <AiPhotoDraft photos={photos} onPhotosChange={setPhotos} onDraft={applyAiDraft} />
 
       <section className="card flex flex-col gap-4 p-5">
         <h2 className="font-semibold">기본 정보</h2>
@@ -100,7 +152,7 @@ export function NewProductForm() {
 
       <div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-3 border-t border-line bg-canvas/95 px-4 py-3 md:-mx-8 md:px-8">
         {message && (
-          <p role="alert" className="mr-auto text-sm text-danger">
+          <p role={saving ? "status" : "alert"} className={`mr-auto text-sm ${saving ? "text-ink-soft" : "text-danger"}`}>
             {message}
           </p>
         )}

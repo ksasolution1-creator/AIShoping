@@ -1,5 +1,6 @@
 package com.aishop.api.catalog;
 
+import java.util.List;
 import java.util.Map;
 
 import jakarta.validation.Valid;
@@ -40,10 +41,29 @@ public class AdminProductController {
 
 	private final ProductService productService;
 	private final AdminContext admin;
+	private final AiProductDrafter aiDrafter;
+	private final CategoryRepository categories;
 
-	public AdminProductController(ProductService productService, AdminContext admin) {
+	public AdminProductController(ProductService productService, AdminContext admin, AiProductDrafter aiDrafter,
+			CategoryRepository categories) {
 		this.productService = productService;
 		this.admin = admin;
+		this.aiDrafter = aiDrafter;
+		this.categories = categories;
+	}
+
+	/** 사진 자동 입력을 쓸 수 있는지 (API 키 설정 여부) */
+	@GetMapping("/products/ai-draft")
+	public Map<String, Object> aiDraftConfig() {
+		return Map.of("enabled", aiDrafter.enabled(), "maxPhotos", AiProductDrafter.MAX_PHOTOS);
+	}
+
+	/** 상품 사진으로 등록 화면 초안 만들기 (저장하지 않음) */
+	@PostMapping(path = "/products/ai-draft", consumes = "multipart/form-data")
+	public AiProductDrafter.AiDraft aiDraft(@RequestPart("photos") List<MultipartFile> photos,
+			@RequestParam(required = false) String hint) {
+		admin.sellerId();
+		return aiDrafter.draft(photos, hint, categories.findActive());
 	}
 
 	@GetMapping("/products")

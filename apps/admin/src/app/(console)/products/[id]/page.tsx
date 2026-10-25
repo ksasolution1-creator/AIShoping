@@ -24,6 +24,9 @@ export default function ProductDetailPage({ params, searchParams }: Props) {
 async function EditorLoader({ params, searchParams }: Props) {
   const id = Number((await params).id);
   if (!Number.isInteger(id) || id <= 0) notFound();
-  const created = (await searchParams).created === "1";
-  return <ProductEditor key={id} id={id} created={created} />;
+  const query = await searchParams;
+  const created = query.created === "1";
+  // 등록 화면에서 함께 올린 사진 중 실패한 장수
+  const photoFailed = Number(query.photoFailed ?? 0) || 0;
+  return <ProductEditor key={id} id={id} created={created} photoFailed={photoFailed} />;
 }

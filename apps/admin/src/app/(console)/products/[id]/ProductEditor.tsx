@@ -39,11 +39,15 @@ function errorMessage(e: unknown) {
 }
 
 /** 상품 상세·수정 화면. id와 created는 서버 페이지(page.tsx)가 주소에서 읽어 넘긴다 */
-export function ProductEditor({ id, created }: { id: number; created: boolean }) {
+export function ProductEditor({ id, created, photoFailed = 0 }: { id: number; created: boolean; photoFailed?: number }) {
   const [product, setProduct] = useState<AdminProductDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(
-    created ? { kind: "ok", text: "상품을 등록했습니다. 사진을 올리고 판매를 시작하세요." } : null,
+    !created
+      ? null
+      : photoFailed > 0
+        ? { kind: "error", text: `상품을 등록했지만 사진 ${photoFailed}장을 올리지 못했습니다. 아래에서 다시 올려 주세요.` }
+        : { kind: "ok", text: "상품을 등록했습니다. 사진을 확인하고 판매를 시작하세요." },
   );
 
   const reload = useCallback(async () => {

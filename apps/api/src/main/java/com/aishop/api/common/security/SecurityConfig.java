@@ -12,12 +12,15 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfException;
 
 import jakarta.servlet.http.HttpServletResponse;
+
+import com.aishop.api.auth.SessionRevoker;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -32,8 +35,11 @@ public class SecurityConfig {
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityContextRepository contextRepository,
-			CookieCsrfTokenRepository csrfTokenRepository, JsonMapper jsonMapper) throws Exception {
+			CookieCsrfTokenRepository csrfTokenRepository, JsonMapper jsonMapper, SessionRevoker sessionRevoker)
+			throws Exception {
 		http
+			// 이용 정지·권한 변경된 계정은 이미 로그인해 있어도 권한 검사 전에 세션을 끊는다
+			.addFilterBefore(sessionRevoker.sessionFilter(), AuthorizationFilter.class)
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
 				.requestMatchers("/files/**").permitAll()

@@ -774,3 +774,151 @@ export const businessAdminApi = {
     body: { businessOnly: boolean; imageReuseAllowed: boolean; skuPrices: { skuId: number; businessPrice: number | null }[] },
   ) => request<AdminProductDetail>(`/api/admin/products/${productId}/business`, { method: "PUT", body: JSON.stringify(body) }),
 };
+
+// ------------------------------------------------------------------
+// 사진으로 상품 정보 자동 입력 (Claude)
+// ------------------------------------------------------------------
+
+export type AiDraft = {
+  name: string;
+  brand: string;
+  modelName: string;
+  /** 0이면 알맞은 카테고리 없음 */
+  categoryId: number;
+  conditionGrade: GradeCode;
+  conditionNote: string;
+  options: string;
+  description: string;
+  /** 0이면 사진에 정가가 보이지 않음 */
+  listPrice: number;
+  barcode: string;
+  kcCertNo: string;
+  notice: { key: string; value: string }[];
+  /** 저장 전에 직접 확인할 점 */
+  warnings: string[];
+};
+
+export const aiApi = {
+  config: () => request<{ enabled: boolean; maxPhotos: number }>("/api/admin/products/ai-draft"),
+  draft: (photos: Blob[], hint: string) => {
+    const form = new FormData();
+    photos.forEach((p, i) => form.append("photos", p, `photo-${i + 1}.jpg`));
+    if (hint.trim()) form.append("hint", hint.trim());
+    return request<AiDraft>("/api/admin/products/ai-draft", { method: "POST", body: form });
+  },
+};
+
+// ------------------------------------------------------------------
+// 회원 관리
+// ------------------------------------------------------------------
+
+export type JoinMethod = "EMAIL" | "KAKAO" | "NAVER" | "APPLE";
+export type MemberStatus = "ACTIVE" | "SUSPENDED" | "WITHDRAWN";
+
+export const JOIN_METHOD_LABEL: Record<JoinMethod, string> = {
+  EMAIL: "이메일",
+  KAKAO: "카카오",
+  NAVER: "네이버",
+  APPLE: "애플",
+};
+
+export const MEMBER_STATUS_LABEL: Record<MemberStatus, string> = {
+  ACTIVE: "정상",
+  SUSPENDED: "정지",
+  WITHDRAWN: "탈퇴",
+};
+
+export const BUSINESS_STATUS_LABEL: Record<string, string> = {
+  PENDING: "사업자 심사중",
+  APPROVED: "사업자",
+  REJECTED: "사업자 거절",
+};
+
+export type MemberRow = {
+  id: number;
+  name: string;
+  email: string | null;
+  joinMethods: JoinMethod[];
+  phoneMasked: string | null;
+  status: MemberStatus;
+  businessStatus: string | null;
+  createdAt: string;
+  lastLoginAt: string | null;
+};
+
+export type MemberDetail = {
+  id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  joinMethods: JoinMethod[];
+  status: MemberStatus;
+  createdAt: string;
+  lastLoginAt: string | null;
+  withdrawnAt: string | null;
+  marketingAgreed: boolean;
+  marketingAgreedAt: string | null;
+  agreements: { type: "TERMS" | "PRIVACY" | "MARKETING" | "AGE_14"; version: string; agreed: boolean; createdAt: string }[];
+  business: {
+    status: string;
+    businessNo: string | null;
+    businessName: string | null;
+    ceoName: string | null;
+    businessItem: string | null;
+    rejectReason: string | null;
+    createdAt: string | null;
+    reviewedAt: string | null;
+  } | null;
+  orders: { count: number; totalAmount: number; lastOrderedAt: string | null };
+  recentOrders: { orderNo: string; status: string; payAmount: number; orderedAt: string }[];
+  statusLogs: { action: "SUSPEND_USER" | "UNSUSPEND_USER"; reason: string | null; actorName: string | null; createdAt: string }[];
+};
+
+export type MemberQuery = { q?: string; method?: string; status?: string; from?: string; to?: string; page?: number };
+
+export const memberApi = {
+  list: (params: MemberQuery) => {
+    const search = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value) search.set(key, String(value));
+    }
+    return request<Page<MemberRow>>(`/api/admin/members?${search}`);
+  },
+  detail: (id: number) => request<MemberDetail>(`/api/admin/members/${id}`),
+  changeStatus: (id: number, status: "ACTIVE" | "SUSPENDED", reason: string) =>
+    request<MemberDetail>(`/api/admin/members/${id}/status`, {
+      method: "POST",
+      body: JSON.stringify({ status, reason }),
+    }),
+};
+
+// ------------------------------------------------------------------
+// 운영자 계정 (관리자만)
+// ------------------------------------------------------------------
+
+export type StaffRole = "ADMIN" | "OPERATOR";
+
+export const STAFF_ROLE_LABEL: Record<StaffRole, string> = {
+  ADMIN: "관리자",
+  OPERATOR: "운영자",
+};
+
+export type Staff = {
+  id: number;
+  name: string;
+  email: string;
+  role: StaffRole;
+  status: "ACTIVE" | "SUSPENDED";
+  createdAt: string;
+  lastLoginAt: string | null;
+};
+
+export const staffApi = {
+  list: () => request<Staff[]>("/api/admin/staff"),
+  create: (body: { email: string; name: string; password: string; role: StaffRole }) =>
+    request<Staff[]>("/api/admin/staff", { method: "POST", body: JSON.stringify(body) }),
+  change: (id: number, body: { role?: StaffRole; status?: "ACTIVE" | "SUSPENDED" }) =>
+    request<Staff[]>(`/api/admin/staff/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  resetPassword: (id: number, password: string) =>
+    request<void>(`/api/admin/staff/${id}/password`, { method: "POST", body: JSON.stringify({ password }) }),
+};

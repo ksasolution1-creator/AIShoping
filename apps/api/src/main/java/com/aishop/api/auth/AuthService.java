@@ -21,7 +21,7 @@ import com.aishop.api.jooq.tables.records.UsersRecord;
 public class AuthService {
 
 	/** 운영자는 고객보다 길게 받는다 (최초 관리자 준비와 같은 기준) */
-	static final int STAFF_MIN_PASSWORD_LENGTH = 10;
+	public static final int STAFF_MIN_PASSWORD_LENGTH = 10;
 
 	private final UserRepository users;
 	private final PasswordEncoder passwordEncoder;
@@ -196,7 +196,7 @@ public class AuthService {
 		}
 		long userId = users.insert(email, passwordEncoder.encode(rawPassword), name, null, "STAFF");
 		roles.forEach(role -> users.addRole(userId, role));
-		users.addSellerMember(sellerId, userId, "OWNER");
+		users.addSellerMember(sellerId, userId, roles.contains("ADMIN") ? "OWNER" : "MANAGER");
 		return userId;
 	}
 
