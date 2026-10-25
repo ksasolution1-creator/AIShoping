@@ -19,6 +19,7 @@ import {
   type PayMethod,
   type Preview,
 } from "@/lib/client-api";
+import { COMPANY } from "@/lib/company";
 import { formatWon } from "@/lib/format";
 
 /** 주소의 items=12:1,15:2 또는 sku=12&qty=1 을 주문 줄로 바꾼다 */
@@ -315,8 +316,19 @@ export function CheckoutForm() {
                       onChange={(e) => setAgreed(e.target.checked)}
                       className="mt-0.5 size-4 accent-brand"
                     />
-                    <span>주문 상품, 금액, 배송 정보를 확인했으며 구매에 동의합니다.</span>
+                    <span>
+                      주문 상품, 금액, 배송 정보와{" "}
+                      <a href="/policy" target="_blank" rel="noreferrer" className="underline underline-offset-2">
+                        배송·교환·환불 안내
+                      </a>
+                      를 확인했으며 구매에 동의합니다.
+                    </span>
                   </label>
+                  {COMPANY.escrow && (
+                    <p className="text-xs text-ink-faint">
+                      고객님의 안전거래를 위해 현금 결제 시 {COMPANY.escrow} 구매안전서비스를 이용하실 수 있습니다.
+                    </p>
+                  )}
                 </div>
               )}
               <div hidden={method !== "TOSS"}>
