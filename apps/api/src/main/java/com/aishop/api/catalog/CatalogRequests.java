@@ -52,7 +52,9 @@ public final class CatalogRequests {
 			@NotNull @Min(0) @Max(100_000) Integer initialStock) {
 	}
 
+	/** @param conditionGrade 바꿀 상태등급. null이면 그대로 둔다 (지난 주문은 주문 당시 등급을 따로 저장해 두어 영향 없음) */
 	public record UpdateSku(
+			ConditionGrade conditionGrade,
 			Map<String, String> optionValues,
 			@Size(max = 500) String conditionNote,
 			@Size(max = 60) String barcode,

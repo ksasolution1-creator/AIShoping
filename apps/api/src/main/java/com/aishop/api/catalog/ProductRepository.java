@@ -30,6 +30,7 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.SortField;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 import com.aishop.api.catalog.CatalogRequests.CreateSku;
@@ -331,6 +332,7 @@ public class ProductRepository {
 
 	public void updateSku(long skuId, UpdateSku s) {
 		dsl.update(SKUS)
+			.set(SKUS.CONDITION_GRADE, s.conditionGrade() == null ? SKUS.CONDITION_GRADE : DSL.val(s.conditionGrade().name()))
 			.set(SKUS.OPTION_VALUES, jsonb.toJsonb(s.optionValues()))
 			.set(SKUS.CONDITION_NOTE, blankToNull(s.conditionNote()))
 			.set(SKUS.BARCODE, blankToNull(s.barcode()))

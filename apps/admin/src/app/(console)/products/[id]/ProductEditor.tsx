@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { WhaleLoader } from "@/components/brand/WhaleLoader";
 import { draftFromProduct, draftToFields, ProductFieldsEditor, type ProductDraft } from "@/components/ProductFieldsEditor";
+import { GradePicker } from "@/components/GradePicker";
 import { emptySku, SkuDraftRow, skuDraftToRequest, validateSkuDraft, type SkuDraft } from "@/components/SkuDraftRow";
 import { StatusChip } from "@/components/StatusChip";
 import { Thumb } from "@/components/Thumb";
@@ -13,11 +14,13 @@ import {
   ApiError,
   formatDate,
   formatWon,
+  GRADES,
   optionsToText,
   parseOptions,
   SKU_STATUS_LABEL,
   type AdminProductDetail,
   type AdminSku,
+  type GradeCode,
   type ProductStatus,
   type SkuStatus,
 } from "@/lib/api";
@@ -170,7 +173,7 @@ function SkuSection({ product, onChanged, show }: SectionProps & { onChanged: ()
         <table className="w-full min-w-[60rem] text-sm">
           <thead className="border-b border-line text-left text-xs text-ink-soft">
             <tr>
-              <th className="py-2 pr-3 font-medium">상태등급 / SKU 코드</th>
+              <th className="py-2 pr-3 font-medium">상태등급 (눌러서 변경) / SKU 코드</th>
               <th className="py-2 pr-3 font-medium">옵션 · 상태 설명 · 바코드</th>
               <th className="py-2 pr-3 font-medium">판매가 / 정가</th>
               <th className="py-2 pr-3 font-medium">판매</th>
@@ -203,6 +206,7 @@ function SkuSection({ product, onChanged, show }: SectionProps & { onChanged: ()
 }
 
 function SkuRow({ sku, onChanged, show }: { sku: AdminSku } & Pick<SectionProps, "show"> & { onChanged: () => Promise<void> }) {
+  const [grade, setGrade] = useState<GradeCode>(sku.grade.code);
   const [options, setOptions] = useState(optionsToText(sku.optionValues));
   const [note, setNote] = useState(sku.conditionNote ?? "");
   const [barcode, setBarcode] = useState(sku.barcode ?? "");
@@ -213,6 +217,7 @@ function SkuRow({ sku, onChanged, show }: { sku: AdminSku } & Pick<SectionProps,
   const [memo, setMemo] = useState("");
 
   const dirty =
+    grade !== sku.grade.code ||
     options !== optionsToText(sku.optionValues) ||
     note !== (sku.conditionNote ?? "") ||
     barcode !== (sku.barcode ?? "") ||
@@ -223,6 +228,7 @@ function SkuRow({ sku, onChanged, show }: { sku: AdminSku } & Pick<SectionProps,
   async function save() {
     try {
       await api.updateSku(sku.id, {
+        conditionGrade: grade,
         optionValues: parseOptions(options),
         conditionNote: note.trim() || null,
         barcode: barcode.trim() || null,
@@ -259,8 +265,16 @@ function SkuRow({ sku, onChanged, show }: { sku: AdminSku } & Pick<SectionProps,
   return (
     <tr className="border-b border-line align-top last:border-0">
       <td className="py-2.5 pr-3">
-        <div className="font-medium">{sku.grade.label}</div>
-        <div className="font-mono text-xs text-ink-faint">{sku.skuCode}</div>
+        <div className="flex w-44 flex-col gap-1">
+          <GradePicker compact value={grade} onChange={setGrade} />
+          {grade !== sku.grade.code && (
+            <span className="text-[11px] text-warn">
+              {sku.grade.label} → {GRADES.find((g) => g.code === grade)?.label}. 저장을 눌러야 바뀝니다
+              {grade !== "NEW" && !note.trim() ? " (상태 설명도 적어 주세요)" : ""}
+            </span>
+          )}
+          <span className="font-mono text-xs text-ink-faint">{sku.skuCode}</span>
+        </div>
       </td>
       <td className="py-2.5 pr-3">
         <div className="flex flex-col gap-1">

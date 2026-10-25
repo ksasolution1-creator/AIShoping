@@ -407,6 +407,7 @@ export const api = {
   updateSku: (
     skuId: number,
     body: {
+      conditionGrade: GradeCode;
       optionValues: Record<string, string>;
       conditionNote: string | null;
       barcode: string | null;

@@ -1,6 +1,8 @@
 "use client";
 
-import { GRADES, parseOptions, type CreateSku, type GradeCode } from "@/lib/api";
+import { parseOptions, type CreateSku, type GradeCode } from "@/lib/api";
+
+import { GradePicker } from "./GradePicker";
 
 export type SkuDraft = {
   key: number;
@@ -61,24 +63,12 @@ export function SkuDraftRow({
 
   return (
     <div className="grid gap-2 rounded border border-line bg-surface p-3 sm:grid-cols-6">
-      <label className="flex flex-col gap-1 sm:col-span-2">
+      <div className="flex flex-col gap-1 sm:col-span-6">
         <span className="field-label">상태등급 *</span>
-        <select
-          id={`${id}-grade`}
-          className="input"
-          value={value.conditionGrade}
-          onChange={(e) => set("conditionGrade", e.target.value as GradeCode)}
-        >
-          <option value="">선택</option>
-          {GRADES.map((g) => (
-            <option key={g.code} value={g.code}>
-              {g.label}
-            </option>
-          ))}
-        </select>
+        <GradePicker id={`${id}-grade`} value={value.conditionGrade} onChange={(g) => set("conditionGrade", g)} />
         {errors.conditionGrade && <span className="text-xs text-danger">{errors.conditionGrade}</span>}
-      </label>
-      <label className="flex flex-col gap-1 sm:col-span-2">
+      </div>
+      <label className="flex flex-col gap-1 sm:col-span-4">
         <span className="field-label">옵션 (예: 색상=블랙, 사이즈=M)</span>
         <input id={`${id}-options`} className="input" value={value.options} onChange={(e) => set("options", e.target.value)} />
       </label>
