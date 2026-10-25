@@ -159,6 +159,13 @@ public class ProductService {
 		products.updateSku(skuId, request);
 	}
 
+	/** 목록에서 상태등급만 바로 바꾼다 */
+	@Transactional
+	public void changeSkuGrade(long sellerId, long skuId, ConditionGrade grade) {
+		products.findProductIdOfSku(sellerId, skuId).orElseThrow(() -> ApiException.notFound("SKU"));
+		products.updateSkuGrade(skuId, grade);
+	}
+
 	/** 재고 수동 조정. qty가 양수면 입고, 음수면 차감 */
 	@Transactional
 	public void adjustStock(long sellerId, long skuId, AdjustStock request) {

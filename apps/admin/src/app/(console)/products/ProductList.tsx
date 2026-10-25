@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { WhaleLoader } from "@/components/brand/WhaleLoader";
+import { GradeQuickEdit, gradeLabel } from "@/components/GradeQuickEdit";
 import { StatusChip } from "@/components/StatusChip";
 import { Thumb } from "@/components/Thumb";
 import {
@@ -13,6 +14,7 @@ import {
   formatWon,
   PRODUCT_STATUS_LABEL,
   type AdminProductRow,
+  type GradeCode,
   type Page,
   type ProductStatus,
 } from "@/lib/api";
@@ -47,6 +49,23 @@ export function ProductList() {
       cancelled = true;
     };
   }, [q, status, page]);
+
+  /** 등급을 바꾼 뒤 목록을 다시 부르지 않고 그 칩만 바꾼다 */
+  function updateGrade(productId: number, skuId: number, code: GradeCode) {
+    setData((d) =>
+      d && {
+        ...d,
+        items: d.items.map((row) =>
+          row.id !== productId
+            ? row
+            : {
+                ...row,
+                skus: row.skus.map((s) => (s.skuId === skuId ? { ...s, grade: { code, label: gradeLabel(code) } } : s)),
+              },
+        ),
+      },
+    );
+  }
 
   function go(change: { q?: string; status?: string; page?: number }) {
     const next = new URLSearchParams();
@@ -104,7 +123,7 @@ export function ProductList() {
               <th className="px-3 py-2.5 font-medium">상품</th>
               <th className="px-3 py-2.5 font-medium">카테고리</th>
               <th className="px-3 py-2.5 font-medium">상태</th>
-              <th className="px-3 py-2.5 text-right font-medium">SKU</th>
+              <th className="px-3 py-2.5 font-medium">상태등급 (눌러서 변경)</th>
               <th className="px-3 py-2.5 text-right font-medium">최저가</th>
               <th className="px-3 py-2.5 text-right font-medium">재고 (예약)</th>
               <th className="px-3 py-2.5 font-medium">등록일</th>
@@ -128,7 +147,18 @@ export function ProductList() {
                 <td className="px-3 py-2">
                   <StatusChip status={p.status} />
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums">{p.skuCount}</td>
+                <td className="px-3 py-2">
+                  <div className="flex max-w-56 flex-wrap gap-1">
+                    {p.skus.map((sku) => (
+                      <GradeQuickEdit
+                        key={sku.skuId}
+                        sku={sku}
+                        onSaved={(code) => updateGrade(p.id, sku.skuId, code)}
+                      />
+                    ))}
+                    {p.skus.length === 0 && <span className="text-ink-faint">-</span>}
+                  </div>
+                </td>
                 <td className="px-3 py-2 text-right tabular-nums">{formatWon(p.minPrice)}</td>
                 <td className="px-3 py-2 text-right tabular-nums">
                   <span className={p.onHand - p.reserved <= 0 ? "font-semibold text-danger" : ""}>{p.onHand}</span>

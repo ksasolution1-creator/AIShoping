@@ -94,7 +94,12 @@ public final class CatalogViews {
 			Long minPrice,
 			int onHand,
 			int reserved,
-			OffsetDateTime createdAt) {
+			OffsetDateTime createdAt,
+			List<SkuGrade> skus) {
+	}
+
+	/** 목록에서 바로 바꾸는 SKU별 상태등급. optionText는 SKU가 여러 개일 때 구분용 (예: 색상=블랙) */
+	public record SkuGrade(long skuId, String optionText, Grade grade) {
 	}
 
 	public record AdminSku(

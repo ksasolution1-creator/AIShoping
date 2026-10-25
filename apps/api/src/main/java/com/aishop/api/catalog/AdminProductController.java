@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.aishop.api.catalog.CatalogRequests.AdjustStock;
+import com.aishop.api.catalog.CatalogRequests.ChangeGrade;
 import com.aishop.api.catalog.CatalogRequests.ChangeProductStatus;
 import com.aishop.api.catalog.CatalogRequests.CreateProduct;
 import com.aishop.api.catalog.CatalogRequests.CreateSku;
@@ -119,6 +120,11 @@ public class AdminProductController {
 	@PutMapping("/skus/{skuId}")
 	public void updateSku(@PathVariable long skuId, @Valid @RequestBody UpdateSku request) {
 		productService.updateSku(admin.sellerId(), skuId, request);
+	}
+
+	@PatchMapping("/skus/{skuId}/grade")
+	public void changeGrade(@PathVariable long skuId, @Valid @RequestBody ChangeGrade request) {
+		productService.changeSkuGrade(admin.sellerId(), skuId, request.conditionGrade());
 	}
 
 	@PostMapping("/skus/{skuId}/stock-adjustments")

@@ -54,7 +54,11 @@ export type AdminProductRow = {
   onHand: number;
   reserved: number;
   createdAt: string;
+  /** SKU별 상태등급 (목록에서 바로 변경) */
+  skus: SkuGrade[];
 };
+
+export type SkuGrade = { skuId: number; optionText: string | null; grade: Grade };
 
 export type AdminSku = {
   id: number;
@@ -416,6 +420,8 @@ export const api = {
       status: SkuStatus;
     },
   ) => request<void>(`/api/admin/skus/${skuId}`, { method: "PUT", body: JSON.stringify(body) }),
+  changeSkuGrade: (skuId: number, conditionGrade: GradeCode) =>
+    request<void>(`/api/admin/skus/${skuId}/grade`, { method: "PATCH", body: JSON.stringify({ conditionGrade }) }),
   adjustStock: (skuId: number, body: { qty: number; memo: string | null }) =>
     request<void>(`/api/admin/skus/${skuId}/stock-adjustments`, { method: "POST", body: JSON.stringify(body) }),
   uploadImage: (id: number, file: File, skuId: number | null) => {

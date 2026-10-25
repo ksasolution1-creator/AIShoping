@@ -105,11 +105,37 @@ class ProductServiceTests {
 		long productId = createProduct("단종 상품 " + uniq(), null, sku(ConditionGrade.NEW, 10_000L, 0));
 		long skuId = productService.getAdminProduct(SELLER, productId).skus().getFirst().id();
 		productService.updateSku(SELLER, skuId,
-				new CatalogRequests.UpdateSku(Map.of(), null, null, 10_000L, null, SkuStatus.INACTIVE));
+				new CatalogRequests.UpdateSku(null, Map.of(), null, null, 10_000L, null, SkuStatus.INACTIVE));
 
 		assertThatThrownBy(() -> productService.changeStatus(SELLER, productId, ProductStatus.ON_SALE))
 			.isInstanceOf(ApiException.class)
 			.extracting("code").isEqualTo("NO_ACTIVE_SKU");
+	}
+
+	@Test
+	void gradeCanBeChangedAfterRegistration() {
+		String name = "등급 변경 " + uniq();
+		long productId = createProduct(name, null, sku(ConditionGrade.NEW, 30_000L, 1));
+		long skuId = productService.getAdminProduct(SELLER, productId).skus().getFirst().id();
+
+		// 수정 화면: 등급을 넣으면 바뀌고, null이면 그대로
+		productService.updateSku(SELLER, skuId,
+				new CatalogRequests.UpdateSku(ConditionGrade.DISPLAY, Map.of(), "전시 사용감", null, 30_000L, null,
+						SkuStatus.ACTIVE));
+		productService.updateSku(SELLER, skuId,
+				new CatalogRequests.UpdateSku(null, Map.of(), "전시 사용감", null, 28_000L, null, SkuStatus.ACTIVE));
+		assertThat(productService.getAdminProduct(SELLER, productId).skus().getFirst().grade().code())
+			.isEqualTo(ConditionGrade.DISPLAY);
+
+		// 목록: 등급만 바로 변경, 목록 행에도 SKU 등급이 실린다
+		productService.changeSkuGrade(SELLER, skuId, ConditionGrade.USED_A);
+		var row = productService.searchAdmin(SELLER, new AdminSearch(name, null, 0, 10))
+			.items().stream().filter(r -> r.id() == productId).findFirst().orElseThrow();
+		assertThat(row.skus()).extracting(s -> s.grade().code()).containsExactly(ConditionGrade.USED_A);
+
+		// 다른 판매자의 SKU는 바꿀 수 없다
+		assertThatThrownBy(() -> productService.changeSkuGrade(OTHER_SELLER, skuId, ConditionGrade.NEW))
+			.isInstanceOf(ApiException.class);
 	}
 
 	@Test

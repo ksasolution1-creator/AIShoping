@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.jooq.Condition;
@@ -46,6 +47,7 @@ import com.aishop.api.catalog.CatalogViews.ProductCard;
 import com.aishop.api.catalog.CatalogViews.ReturnInfo;
 import com.aishop.api.catalog.CatalogViews.ShopProductDetail;
 import com.aishop.api.catalog.CatalogViews.ShopSku;
+import com.aishop.api.catalog.CatalogViews.SkuGrade;
 import com.aishop.api.common.db.JsonbMapper;
 import com.aishop.api.common.web.PageResponse;
 import com.aishop.api.jooq.tables.records.ProductsRecord;
@@ -223,10 +225,40 @@ public class ProductRepository {
 			.offset(search.offset())
 			.fetch(r -> new AdminProductRow(r.value1(), r.value2(), r.value3(), r.value4(),
 					ProductStatus.valueOf(r.value5()), r.value6(), r.value7(), r.value8(),
-					toInt(r.value9()), toInt(r.value10()), r.value11()));
+					toInt(r.value9()), toInt(r.value10()), r.value11(), List.of()));
+
+		// 목록에서 등급을 바로 바꿀 수 있게 상품별 SKU 등급을 붙인다 (페이지의 상품만 한 번에 조회)
+		Map<Long, List<SkuGrade>> grades = skuGrades(items.stream().map(AdminProductRow::id).toList());
+		items = items.stream()
+			.map(r -> new AdminProductRow(r.id(), r.name(), r.brand(), r.categoryName(), r.status(), r.thumbnailUrl(),
+					r.skuCount(), r.minPrice(), r.onHand(), r.reserved(), r.createdAt(),
+					grades.getOrDefault(r.id(), List.of())))
+			.toList();
 
 		long total = dsl.fetchCount(PRODUCTS, condition);
 		return new PageResponse<>(items, search.page(), search.size(), total);
+	}
+
+	private Map<Long, List<SkuGrade>> skuGrades(List<Long> productIds) {
+		if (productIds.isEmpty()) {
+			return Map.of();
+		}
+		return dsl.select(SKUS.PRODUCT_ID, SKUS.ID, SKUS.OPTION_VALUES, SKUS.CONDITION_GRADE)
+			.from(SKUS)
+			.where(SKUS.PRODUCT_ID.in(productIds), SKUS.STATUS.ne(DELETED_SKU))
+			.orderBy(SKUS.ID)
+			.fetchGroups(r -> r.value1(), r -> new SkuGrade(r.value2(), optionText(jsonb.toStringMap(r.value3())),
+					Grade.of(ConditionGrade.valueOf(r.value4()))));
+	}
+
+	private static String optionText(Map<String, String> options) {
+		return options.isEmpty() ? null : options.entrySet().stream()
+			.map(e -> e.getKey() + "=" + e.getValue())
+			.collect(java.util.stream.Collectors.joining(", "));
+	}
+
+	public void updateSkuGrade(long skuId, ConditionGrade grade) {
+		dsl.update(SKUS).set(SKUS.CONDITION_GRADE, grade.name()).where(SKUS.ID.eq(skuId)).execute();
 	}
 
 	public Optional<AdminProductDetail> findAdminProduct(long sellerId, long productId) {

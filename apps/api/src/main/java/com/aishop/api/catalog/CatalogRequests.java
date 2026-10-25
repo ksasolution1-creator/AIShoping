@@ -63,6 +63,9 @@ public final class CatalogRequests {
 			@NotNull SkuStatus status) {
 	}
 
+	public record ChangeGrade(@NotNull(message = "상태등급을 선택해 주세요.") ConditionGrade conditionGrade) {
+	}
+
 	public record ChangeProductStatus(@NotNull ProductStatus status) {
 	}
 
