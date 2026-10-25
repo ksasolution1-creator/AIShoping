@@ -1,5 +1,7 @@
 package com.aishop.api.auth;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.aishop.api.auth.AuthRequests.Signup;
+import com.aishop.api.auth.AuthRequests.SocialSignup;
 import com.aishop.api.common.web.AdminContext;
 import com.aishop.api.common.web.ApiException;
 import com.aishop.api.jooq.tables.records.UsersRecord;
@@ -43,13 +46,66 @@ public class AuthService {
 		}
 		long userId = users.insert(email, passwordEncoder.encode(request.password()), request.name().strip(), null,
 				"CUSTOMER");
+		recordAgreements(userId, request.marketingAgreed(), ip);
+		users.touchLastLogin(userId);
+		return loadAuthUser(users.findById(userId).orElseThrow());
+	}
+
+	/**
+	 * 간편로그인. 이미 연결된 회원이면 로그인하고, 처음이면 빈 값을 돌려줘 약관 동의 화면으로 보낸다.
+	 * 같은 이메일로 가입한 회원이 있으면 남의 계정에 붙지 않도록 자동 연결하지 않고 막는다.
+	 */
+	@Transactional
+	public Optional<AuthUser> socialLogin(SocialProfile profile) {
+		UsersRecord user = users.findBySocial(profile.provider().name(), profile.providerUserId()).orElse(null);
+		if (user != null) {
+			if (!"ACTIVE".equals(user.getStatus())) {
+				throw new ApiException(HttpStatus.FORBIDDEN, "ACCOUNT_SUSPENDED", "이용이 정지된 계정입니다. 고객센터에 문의해 주세요.");
+			}
+			users.touchLastLogin(user.getId());
+			return Optional.of(loadAuthUser(user));
+		}
+		requireEmailFree(profile);
+		return Optional.empty();
+	}
+
+	/** 간편로그인 첫 가입 (약관 동의 후). 비밀번호 없이 만든다 */
+	@Transactional
+	public AuthUser socialSignup(SocialProfile profile, SocialSignup request, String ip) {
+		if (users.findBySocial(profile.provider().name(), profile.providerUserId()).isPresent()) {
+			throw ApiException.conflict("ALREADY_SIGNED_UP", "이미 가입된 계정입니다. 다시 로그인해 주세요.");
+		}
+		requireEmailFree(profile);
+		long userId = users.insert(profile.email(), null, request.name().strip(), null, "CUSTOMER");
+		users.linkSocial(userId, profile.provider().name(), profile.providerUserId());
+		recordAgreements(userId, request.marketingAgreed(), ip);
+		users.touchLastLogin(userId);
+		return loadAuthUser(users.findById(userId).orElseThrow());
+	}
+
+	/** 마이페이지: 비밀번호가 있는지, 어떤 간편로그인이 연결됐는지 */
+	@Transactional(readOnly = true)
+	public LoginMethods loginMethods(long userId) {
+		UsersRecord user = users.findById(userId).orElseThrow(() -> ApiException.notFound("회원"));
+		return new LoginMethods(user.getPasswordHash() != null, users.findSocialProviders(userId));
+	}
+
+	public record LoginMethods(boolean hasPassword, List<String> socialProviders) {
+	}
+
+	private void requireEmailFree(SocialProfile profile) {
+		if (profile.email() != null && users.emailInUse(profile.email())) {
+			throw ApiException.conflict("EMAIL_IN_USE",
+					"이미 같은 이메일(" + profile.email() + ")로 가입한 계정이 있습니다. 이메일로 로그인해 주세요.");
+		}
+	}
+
+	private void recordAgreements(long userId, boolean marketingAgreed, String ip) {
 		users.insertAgreement(userId, "AGE_14", termsVersion, true, ip);
 		users.insertAgreement(userId, "TERMS", termsVersion, true, ip);
 		users.insertAgreement(userId, "PRIVACY", termsVersion, true, ip);
-		users.insertAgreement(userId, "MARKETING", termsVersion, request.marketingAgreed(), ip);
-		users.setMarketingAgreed(userId, request.marketingAgreed());
-		users.touchLastLogin(userId);
-		return loadAuthUser(users.findById(userId).orElseThrow());
+		users.insertAgreement(userId, "MARKETING", termsVersion, marketingAgreed, ip);
+		users.setMarketingAgreed(userId, marketingAgreed);
 	}
 
 	/** 이메일·비밀번호 확인. 실패 횟수를 세고, 연속 실패하면 잠근다. */
@@ -80,7 +136,8 @@ public class AuthService {
 		if ("STAFF".equals(user.getType())) {
 			throw ApiException.badRequest("STAFF_CANNOT_WITHDRAW", "운영자 계정은 탈퇴할 수 없습니다.");
 		}
-		if (user.getPasswordHash() != null && !passwordEncoder.matches(password, user.getPasswordHash())) {
+		if (user.getPasswordHash() != null
+				&& (password == null || !passwordEncoder.matches(password, user.getPasswordHash()))) {
 			throw new ApiException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "비밀번호가 맞지 않습니다.");
 		}
 		users.withdraw(userId);
@@ -128,7 +185,7 @@ public class AuthService {
 		return users.emailInUse(email);
 	}
 
-	private AuthUser loadAuthUser(UsersRecord user) {
+	AuthUser loadAuthUser(UsersRecord user) {
 		boolean staff = "STAFF".equals(user.getType());
 		Set<String> roles = staff ? users.findRoles(user.getId()) : Set.of();
 		Long sellerId = null;

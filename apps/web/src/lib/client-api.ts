@@ -69,6 +69,14 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}, retrie
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
+/** 서버에 앱 키가 설정된 간편로그인 */
+export type SocialProviderInfo = { id: "kakao" | "naver" | string; label: string };
+
+/** 간편로그인 첫 가입 대기 정보 */
+export type SocialPending = { provider: string; providerLabel: string; name: string | null; email: string | null };
+
+export type LoginMethods = { hasPassword: boolean; socialProviders: string[] };
+
 export const authApi = {
   me: async (): Promise<Me | null> => {
     try {
@@ -90,6 +98,16 @@ export const authApi = {
     agreeMarketing: boolean;
   }) => apiRequest<Me>("/api/auth/signup", { method: "POST", body: JSON.stringify(body) }),
   logout: () => apiRequest<void>("/api/auth/logout", { method: "POST" }),
+  socialProviders: () => apiRequest<SocialProviderInfo[]>("/api/auth/social/providers"),
+  socialPending: () => apiRequest<SocialPending>("/api/auth/social/pending"),
+  socialSignup: (body: {
+    name: string;
+    agreeAge14: boolean;
+    agreeTerms: boolean;
+    agreePrivacy: boolean;
+    agreeMarketing: boolean;
+  }) => apiRequest<Me>("/api/auth/social/signup", { method: "POST", body: JSON.stringify(body) }),
+  loginMethods: () => apiRequest<LoginMethods>("/api/me/login-methods"),
   withdraw: (password: string) =>
     apiRequest<void>("/api/me/withdraw", { method: "POST", body: JSON.stringify({ password }) }),
   changePassword: (currentPassword: string, newPassword: string) =>

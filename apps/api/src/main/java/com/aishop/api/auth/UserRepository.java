@@ -13,6 +13,7 @@ import static org.jooq.impl.DSL.lower;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -42,6 +43,31 @@ public class UserRepository {
 
 	public Optional<UsersRecord> findById(long id) {
 		return dsl.selectFrom(USERS).where(USERS.ID.eq(id)).fetchOptional();
+	}
+
+	/** 간편로그인 계정에 연결된 회원 (탈퇴하면 연결도 지워진다) */
+	public Optional<UsersRecord> findBySocial(String provider, String providerUserId) {
+		return dsl.select(USERS.fields())
+			.from(SOCIAL_ACCOUNTS)
+			.join(USERS).on(USERS.ID.eq(SOCIAL_ACCOUNTS.USER_ID))
+			.where(SOCIAL_ACCOUNTS.PROVIDER.eq(provider), SOCIAL_ACCOUNTS.PROVIDER_USER_ID.eq(providerUserId))
+			.fetchOptionalInto(USERS);
+	}
+
+	public void linkSocial(long userId, String provider, String providerUserId) {
+		dsl.insertInto(SOCIAL_ACCOUNTS)
+			.set(SOCIAL_ACCOUNTS.USER_ID, userId)
+			.set(SOCIAL_ACCOUNTS.PROVIDER, provider)
+			.set(SOCIAL_ACCOUNTS.PROVIDER_USER_ID, providerUserId)
+			.execute();
+	}
+
+	public List<String> findSocialProviders(long userId) {
+		return dsl.select(SOCIAL_ACCOUNTS.PROVIDER)
+			.from(SOCIAL_ACCOUNTS)
+			.where(SOCIAL_ACCOUNTS.USER_ID.eq(userId))
+			.orderBy(SOCIAL_ACCOUNTS.ID)
+			.fetch(SOCIAL_ACCOUNTS.PROVIDER);
 	}
 
 	public boolean emailInUse(String email) {

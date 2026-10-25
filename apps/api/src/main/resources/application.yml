@@ -64,3 +64,13 @@ aishop:
     # 토스페이먼츠 개발자센터 > API 키 (테스트 키로 개발)
     client-key: ${TOSS_CLIENT_KEY:}
     secret-key: ${TOSS_SECRET_KEY:}
+  social:
+    # 간편로그인 콜백 주소의 앞부분 (쇼핑몰 주소). 각 개발자센터에 {이 값}/api/auth/social/{kakao|naver}/callback 을 등록한다
+    redirect-base: ${SHOP_URL:http://localhost:3000}
+    # 키가 비어 있는 제공자는 로그인 화면에 '준비중'으로 보인다
+    kakao:
+      client-id: ${KAKAO_CLIENT_ID:}
+      client-secret: ${KAKAO_CLIENT_SECRET:}
+    naver:
+      client-id: ${NAVER_CLIENT_ID:}
+      client-secret: ${NAVER_CLIENT_SECRET:}

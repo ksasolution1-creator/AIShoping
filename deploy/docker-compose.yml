@@ -45,6 +45,11 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       TOSS_CLIENT_KEY: ${TOSS_CLIENT_KEY:-}
       TOSS_SECRET_KEY: ${TOSS_SECRET_KEY:-}
+      SHOP_URL: https://${SHOP_DOMAIN}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID:-}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:-}
+      NAVER_CLIENT_ID: ${NAVER_CLIENT_ID:-}
+      NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET:-}
       TZ: Asia/Seoul
     volumes:
       - uploads:/app/uploads

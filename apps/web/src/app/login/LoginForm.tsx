@@ -4,13 +4,15 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-import { SocialLoginPlaceholder, TextField } from "@/components/AuthCard";
+import { TextField } from "@/components/AuthCard";
+import { SocialLoginButtons, socialErrorMessage } from "@/components/SocialLoginButtons";
 import { authApi, ClientApiError, safeNext } from "@/lib/client-api";
 
 export function LoginForm() {
   const router = useRouter();
-  const next = safeNext(useSearchParams().get("next"));
-  const [error, setError] = useState<string | null>(null);
+  const params = useSearchParams();
+  const next = safeNext(params.get("next"));
+  const [error, setError] = useState<string | null>(socialErrorMessage(params.get("socialError")));
   const [submitting, setSubmitting] = useState(false);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -55,7 +57,7 @@ export function LoginForm() {
           </Link>
         </p>
       </form>
-      <SocialLoginPlaceholder />
+      <SocialLoginButtons next={next} />
     </div>
   );
 }

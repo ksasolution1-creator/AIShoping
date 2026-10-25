@@ -1,22 +1,13 @@
 package com.aishop.api.auth;
 
-import java.util.List;
 import java.util.Map;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.context.SecurityContextHolderStrategy;
-import org.springframework.security.web.context.SecurityContextRepository;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,15 +25,11 @@ import com.aishop.api.common.web.ApiException;
 public class AuthController {
 
 	private final AuthService authService;
-	private final SecurityContextRepository contextRepository;
-	private final CookieCsrfTokenRepository csrfTokenRepository;
-	private final SecurityContextHolderStrategy holder = SecurityContextHolder.getContextHolderStrategy();
+	private final LoginSessions sessions;
 
-	public AuthController(AuthService authService, SecurityContextRepository contextRepository,
-			CookieCsrfTokenRepository csrfTokenRepository) {
+	public AuthController(AuthService authService, LoginSessions sessions) {
 		this.authService = authService;
-		this.contextRepository = contextRepository;
-		this.csrfTokenRepository = csrfTokenRepository;
+		this.sessions = sessions;
 	}
 
 	/** XSRF-TOKEN 쿠키를 발급한다. 변경 요청 전에 쿠키가 없으면 먼저 호출한다. */
@@ -64,7 +51,7 @@ public class AuthController {
 	public AuthUser signup(@Valid @RequestBody Signup request, HttpServletRequest httpRequest,
 			HttpServletResponse httpResponse) {
 		AuthUser user = authService.signup(request, httpRequest.getRemoteAddr());
-		startSession(user, httpRequest, httpResponse);
+		sessions.start(user, httpRequest, httpResponse);
 		return user;
 	}
 
@@ -72,14 +59,14 @@ public class AuthController {
 	public AuthUser login(@Valid @RequestBody Login request, HttpServletRequest httpRequest,
 			HttpServletResponse httpResponse) {
 		AuthUser user = authService.login(request.email(), request.password());
-		startSession(user, httpRequest, httpResponse);
+		sessions.start(user, httpRequest, httpResponse);
 		return user;
 	}
 
 	@PostMapping("/api/auth/logout")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void logout(HttpServletRequest request, HttpServletResponse response) {
-		endSession(request, response);
+		sessions.end(request, response);
 	}
 
 	/** 비밀번호 변경. 세션 ID를 새로 발급해 변경 전 세션 값을 다시 쓸 수 없게 한다. */
@@ -97,32 +84,7 @@ public class AuthController {
 	public void withdraw(@AuthenticationPrincipal AuthUser user, @Valid @RequestBody Withdraw body,
 			HttpServletRequest request, HttpServletResponse response) {
 		authService.withdraw(user.id(), body.password());
-		endSession(request, response);
-	}
-
-	private void startSession(AuthUser user, HttpServletRequest request, HttpServletResponse response) {
-		// 세션 고정 공격 방지: 로그인 전에 쓰던 세션 ID를 바꾼다
-		if (request.getSession(false) != null) {
-			request.changeSessionId();
-		}
-		List<SimpleGrantedAuthority> authorities = user.isStaff()
-				? user.roles().stream().map(r -> new SimpleGrantedAuthority("ROLE_" + r)).toList()
-				: List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER"));
-		SecurityContext context = holder.createEmptyContext();
-		context.setAuthentication(UsernamePasswordAuthenticationToken.authenticated(user, null, authorities));
-		holder.setContext(context);
-		contextRepository.saveContext(context, request, response);
-		// 로그인 전 CSRF 토큰은 버리고, 다음 변경 요청 전에 새로 받게 한다
-		csrfTokenRepository.saveToken(null, request, response);
-	}
-
-	private void endSession(HttpServletRequest request, HttpServletResponse response) {
-		holder.clearContext();
-		HttpSession session = request.getSession(false);
-		if (session != null) {
-			session.invalidate();
-		}
-		csrfTokenRepository.saveToken(null, request, response);
+		sessions.end(request, response);
 	}
 
 }

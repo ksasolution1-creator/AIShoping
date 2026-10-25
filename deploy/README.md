@@ -50,6 +50,27 @@ docker compose logs -f caddy  # 인증서 발급 확인 (certificate obtained)
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD`: 최초 관리자 (10자 이상). 계정이 만들어진 뒤에는 지워도 된다.
 - `TOSS_CLIENT_KEY`, `TOSS_SECRET_KEY`: 테스트 서버는 토스 테스트 키
 
+### 간편로그인 (카카오·네이버)
+
+키를 넣지 않으면 로그인 화면의 버튼이 '준비중'으로 보이고, 나머지 기능은 그대로 동작한다.
+
+**카카오** — https://developers.kakao.com → 내 애플리케이션 → 애플리케이션 추가
+- 앱 키 → **REST API 키**를 `KAKAO_CLIENT_ID`에
+- 카카오 로그인 → 활성화 ON, Redirect URI에 `https://ddgorae.ksaria.co.kr/api/auth/social/kakao/callback`
+- 카카오 로그인 → 동의항목: 닉네임(필수), 카카오계정(이메일)(선택). 이름은 비즈 앱 전환 후 받을 수 있다
+- 보안 → Client Secret을 켰다면 그 값을 `KAKAO_CLIENT_SECRET`에 (끄면 비워 둔다)
+- 플랫폼 → Web 사이트 도메인에 `https://ddgorae.ksaria.co.kr`
+
+**네이버** — https://developers.naver.com → Application → 애플리케이션 등록
+- 사용 API: 네이버 로그인, 제공 정보: 이름·이메일(필수), 별명(선택)
+- 서비스 URL `https://ddgorae.ksaria.co.kr`, Callback URL `https://ddgorae.ksaria.co.kr/api/auth/social/naver/callback`
+- Client ID → `NAVER_CLIENT_ID`, Client Secret → `NAVER_CLIENT_SECRET`
+- 처음에는 '개발 중' 상태라 멤버로 등록한 네이버 아이디만 로그인된다. 검수 요청이 통과해야 모든 고객이 쓸 수 있다
+
+로컬에서 시험할 때는 같은 앱에 `http://localhost:3000/api/auth/social/{kakao|naver}/callback`도 등록하고, `apps/api/config/application.yml`의 `aishop.social` 아래에 키를 넣는다.
+
+`.env`를 고친 뒤 `docker compose up -d api`로 API만 다시 띄우면 적용된다.
+
 ## 4. 백업 (매일 새벽 3시 30분)
 
 ```bash

@@ -38,7 +38,25 @@ public final class AuthRequests {
 			@NotBlank(message = "비밀번호를 입력해 주세요.") String password) {
 	}
 
-	public record Withdraw(@NotBlank(message = "비밀번호를 입력해 주세요.") String password) {
+	/** 간편로그인으로만 가입한 회원은 비밀번호가 없으므로 비워 보낸다 */
+	public record Withdraw(String password) {
+	}
+
+	/** 간편로그인 첫 가입: 이름 확인과 약관 동의 */
+	public record SocialSignup(
+			@NotBlank(message = "이름을 입력해 주세요.") @Size(max = 30) String name,
+			@NotNull(message = "만 14세 이상만 가입할 수 있습니다.")
+			@AssertTrue(message = "만 14세 이상만 가입할 수 있습니다.") Boolean agreeAge14,
+			@NotNull(message = "이용약관에 동의해 주세요.")
+			@AssertTrue(message = "이용약관에 동의해 주세요.") Boolean agreeTerms,
+			@NotNull(message = "개인정보 수집·이용에 동의해 주세요.")
+			@AssertTrue(message = "개인정보 수집·이용에 동의해 주세요.") Boolean agreePrivacy,
+			Boolean agreeMarketing) {
+
+		public boolean marketingAgreed() {
+			return Boolean.TRUE.equals(agreeMarketing);
+		}
+
 	}
 
 	public record ChangePassword(
