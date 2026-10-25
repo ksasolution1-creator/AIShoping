@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#3A8DFF"/>
+      <stop offset="1" stop-color="#0B3A93"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.3" cy="0.2" r="0.7">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+  <!-- 물결 -->
+  <path d="M0 860 q128 -50 256 0 t256 0 t256 0 t256 0 V1024 H0z" fill="#0A2E6E" opacity="0.35"/>
+  <!-- 고래 (WhaleMark 원본 좌표를 옮겨 그림) -->
+  <g transform="translate(512 545) scale(1.18) translate(-615 -545)">
+    <g fill="#BFE6FF">
+      <path d="M600 330 q-10 -60 -60 -80 q50 10 60 50 q10 -40 60 -50 q-50 20 -60 80z"/>
+      <circle cx="530" cy="240" r="16"/>
+      <circle cx="670" cy="240" r="16"/>
+      <circle cx="600" cy="215" r="18"/>
+    </g>
+    <path d="M330 560 C330 410 460 340 600 340 C780 340 900 440 900 570 C900 660 840 720 760 740 L860 800 C890 820 880 860 845 855 L720 760 C680 770 640 775 600 775 C440 775 330 690 330 560 Z"
+      fill="#FFFFFF" stroke="#0A2E6E" stroke-width="14" stroke-linejoin="round"/>
+    <path d="M370 600 C420 700 520 740 620 735 C720 730 800 690 840 640 C760 680 660 700 560 690 C470 680 410 650 370 600 Z" fill="#CFE8FF"/>
+    <circle cx="500" cy="530" r="28" fill="#0A2E6E"/>
+    <circle cx="509" cy="519" r="10" fill="#fff"/>
+    <ellipse cx="452" cy="592" rx="30" ry="17" fill="#FF8FA3" opacity="0.85"/>
+    <path d="M520 600 q35 30 75 0" fill="none" stroke="#0A2E6E" stroke-width="11" stroke-linecap="round"/>
+    <path d="M600 660 q40 60 110 50 q-30 -50 -110 -50z" fill="#9CCBF5"/>
+  </g>
+  <!-- 땡처리 가격표 -->
+  <g transform="translate(742 250) rotate(14)">
+    <rect x="-118" y="-62" width="236" height="124" rx="26" fill="#FFD43B" stroke="#0A2E6E" stroke-width="10"/>
+    <circle cx="-80" cy="0" r="13" fill="#0A2E6E"/>
+    <text x="22" y="30" text-anchor="middle" font-family="Jua, 'Malgun Gothic', sans-serif" font-size="92" font-weight="700" fill="#D81B60">땡</text>
+  </g>
+</svg>

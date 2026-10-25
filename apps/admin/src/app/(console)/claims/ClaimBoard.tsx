@@ -75,7 +75,7 @@ export function ClaimBoard() {
 
   return (
     <div className="flex flex-col gap-4">
-      <nav className="flex gap-1 overflow-x-auto" aria-label="처리 상태">
+      <nav className="scrollbar-none flex gap-1 overflow-x-auto" aria-label="처리 상태">
         {TABS.map((tab) => (
           <button
             key={tab.value}

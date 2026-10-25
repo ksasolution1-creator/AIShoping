@@ -37,7 +37,7 @@ export function ShippingBoard() {
 
   return (
     <div className="flex flex-col gap-4">
-      <nav className="flex gap-1 overflow-x-auto border-b border-line" aria-label="배송 단계">
+      <nav className="scrollbar-none flex gap-1 overflow-x-auto border-b border-line" aria-label="배송 단계">
         {TABS.map((t) => (
           <button
             key={t.value}

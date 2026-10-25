@@ -8,7 +8,7 @@ import { GradeBadge } from "@/components/GradeBadge";
 import { PriceTag } from "@/components/PriceTag";
 import { ProductImage } from "@/components/ProductImage";
 import type { ProductDetail } from "@/lib/api";
-import { cartApi, ClientApiError, communityApi, loginUrl } from "@/lib/client-api";
+import { authApi, cartApi, ClientApiError, communityApi, loginUrl } from "@/lib/client-api";
 import { formatRate, formatWon, optionText, shipWithinText, tierBpFor, tierUnitDiscount } from "@/lib/format";
 
 export function ProductPurchasePanel({ product }: { product: ProductDetail }) {
@@ -300,8 +300,9 @@ function WishButton({ productId }: { productId: number }) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    communityApi
-      .isWished(productId)
+    authApi
+      .me()
+      .then((me) => (me ? communityApi.isWished(productId) : { wished: false }))
       .then((r) => setWished(r.wished))
       .catch(() => setWished(false));
   }, [productId]);

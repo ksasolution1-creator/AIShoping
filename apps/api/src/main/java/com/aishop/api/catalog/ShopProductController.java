@@ -38,12 +38,14 @@ public class ShopProductController {
 			@RequestParam(defaultValue = "false") boolean ddaeng,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "24") int size) {
-		// 첫 페이지 검색만 인기검색어 집계에 남긴다 (다음 페이지 넘김은 같은 검색)
-		if (q != null && !q.isBlank() && q.strip().length() <= 30 && page == 0) {
+		PageResponse<ProductCard> result = productService.searchShop(q, categoryId, sort, ddaeng, Math.max(page, 0),
+				Math.clamp(size, 1, MAX_PAGE_SIZE));
+		// 첫 페이지 검색만 인기검색어 집계에 남긴다 (다음 페이지 넘김은 같은 검색).
+		// 결과가 없는 검색어(오타·장난 입력)는 인기검색어에 올라가지 않게 뺀다
+		if (q != null && !q.isBlank() && q.strip().length() <= 30 && page == 0 && result.total() > 0) {
 			searchLogs.log(q.strip());
 		}
-		return productService.searchShop(q, categoryId, sort, ddaeng, Math.max(page, 0),
-				Math.clamp(size, 1, MAX_PAGE_SIZE));
+		return result;
 	}
 
 	/** 최근 7일 인기검색어 10개 */

@@ -56,7 +56,9 @@ function buildHref(filters: Filters, change: Partial<Filters>) {
 export default function HomePage({ searchParams }: { searchParams: SearchParams }) {
   return (
     <div className="flex flex-col gap-6 pt-5">
-      <HeroBanner />
+      <Suspense fallback={<HeroBanner />}>
+        <HeroWhenBrowsing searchParams={searchParams} />
+      </Suspense>
 
       <section className="flex flex-col gap-1">
         <h2 className="text-2xl font-bold text-navy">오늘의 땡처리</h2>
@@ -115,6 +117,13 @@ async function CategoryTabs({ searchParams }: { searchParams: SearchParams }) {
       </ul>
     </nav>
   );
+}
+
+/** 처음 들어온 홈에서만 배너를 보여 준다. 검색·카테고리·정렬·땡처리관에서는 상품이 바로 보이게 뺀다 */
+async function HeroWhenBrowsing({ searchParams }: { searchParams: SearchParams }) {
+  const filters = parseFilters(await searchParams);
+  const filtered = filters.q || filters.categoryId || filters.ddaeng || filters.sort !== "NEWEST" || filters.page > 0;
+  return filtered ? null : <HeroBanner />;
 }
 
 async function PopularKeywords() {

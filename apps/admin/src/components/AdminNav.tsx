@@ -17,7 +17,7 @@ export function AdminNav() {
           </span>
         </Link>
       </div>
-      <nav className="overflow-x-auto px-2 pb-2 md:flex-1 md:pb-0">
+      <nav className="scrollbar-none overflow-x-auto px-2 pb-2 md:flex-1 md:pb-0">
         {/* 동적 경로(/products/[id])에서는 현재 주소를 요청 시점에 알 수 있어서 Suspense로 감싼다 */}
         <Suspense fallback={<NavLinks pathname="" />}>
           <ActiveNavLinks />

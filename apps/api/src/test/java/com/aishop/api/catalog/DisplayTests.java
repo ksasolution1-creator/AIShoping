@@ -87,6 +87,7 @@ class DisplayTests {
 	@Test
 	void searchesAreLoggedAndRankedAsPopular() throws Exception {
 		String word = "인기" + uniq();
+		product(word + " 상품", null, 1_000L, null);
 		mvc.perform(get("/api/products").param("q", word)).andExpect(status().isOk());
 		mvc.perform(get("/api/products").param("q", " " + word.toUpperCase() + " ")).andExpect(status().isOk());
 		// 다음 페이지 넘김은 다시 세지 않는다
@@ -95,6 +96,14 @@ class DisplayTests {
 		assertThat(dsl.fetchCount(SEARCH_LOGS, SEARCH_LOGS.KEYWORD.equalIgnoreCase(word))).isEqualTo(2);
 		assertThat(searchLogs.popular(Duration.ofDays(7), 50)).contains(word.toLowerCase());
 		mvc.perform(get("/api/search/popular").with(csrf())).andExpect(status().isOk());
+	}
+
+	@Test
+	void searchesWithoutResultsAreNotLogged() throws Exception {
+		String word = "없는말" + uniq();
+		mvc.perform(get("/api/products").param("q", word)).andExpect(status().isOk());
+
+		assertThat(dsl.fetchCount(SEARCH_LOGS, SEARCH_LOGS.KEYWORD.equalIgnoreCase(word))).isZero();
 	}
 
 	// ------------------------------------------------------------------

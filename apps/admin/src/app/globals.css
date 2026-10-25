@@ -79,6 +79,13 @@ body {
 @utility btn-outline {
   @apply btn border border-line bg-surface text-ink hover:bg-surface-muted;
 }
+/* 가로로 밀어 보는 탭: 스크롤은 되고 스크롤바는 숨긴다 */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
 @utility card {
   @apply rounded-md border border-line bg-surface;
 }
