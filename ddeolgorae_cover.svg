@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">
+  <defs>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2E8BF0"/>
+      <stop offset="1" stop-color="#0B3D91"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="1200" fill="url(#sea)"/>
+  <!-- bubbles -->
+  <g fill="#ffffff" opacity="0.18">
+    <circle cx="140" cy="180" r="40"/><circle cx="1050" cy="140" r="60"/>
+    <circle cx="980" cy="330" r="22"/><circle cx="220" cy="420" r="18"/>
+    <circle cx="1080" cy="900" r="35"/><circle cx="110" cy="980" r="50"/>
+  </g>
+  <!-- price tags raining -->
+  <g font-family="Noto Sans CJK KR, sans-serif" font-weight="900" font-size="34" text-anchor="middle">
+    <g transform="translate(260,250) rotate(-14)"><rect x="-70" y="-30" width="140" height="60" rx="12" fill="#FFD43B"/><text y="12" fill="#C2185B">-70%</text></g>
+    <g transform="translate(940,250) rotate(12)"><rect x="-70" y="-30" width="140" height="60" rx="12" fill="#FFD43B"/><text y="12" fill="#C2185B">땡처리</text></g>
+    <g transform="translate(170,640) rotate(10)"><rect x="-60" y="-30" width="120" height="60" rx="12" fill="#FF6B6B"/><text y="12" fill="#fff">재고</text></g>
+    <g transform="translate(1030,620) rotate(-10)"><rect x="-60" y="-30" width="120" height="60" rx="12" fill="#FF6B6B"/><text y="12" fill="#fff">도매</text></g>
+  </g>
+  <!-- whale spout -->
+  <g fill="#BFE6FF">
+    <path d="M600 330 q-10 -60 -60 -80 q50 10 60 50 q10 -40 60 -50 q-50 20 -60 80z"/>
+    <circle cx="530" cy="240" r="16"/><circle cx="670" cy="240" r="16"/><circle cx="600" cy="215" r="18"/>
+  </g>
+  <!-- whale body -->
+  <path d="M330 560 C330 410 460 340 600 340 C780 340 900 440 900 570 C900 660 840 720 760 740 L860 800 C890 820 880 860 845 855 L720 760 C680 770 640 775 600 775 C440 775 330 690 330 560 Z" fill="#1E5BC6" stroke="#0A2E6E" stroke-width="10"/>
+  <!-- belly -->
+  <path d="M370 600 C420 700 520 740 620 735 C720 730 800 690 840 640 C760 680 660 700 560 690 C470 680 410 650 370 600 Z" fill="#DDF0FF"/>
+  <!-- eye & cheek -->
+  <circle cx="500" cy="530" r="26" fill="#0A2E6E"/><circle cx="508" cy="520" r="9" fill="#fff"/>
+  <ellipse cx="455" cy="590" rx="28" ry="16" fill="#FF8FA3" opacity="0.8"/>
+  <!-- smile -->
+  <path d="M520 600 q35 30 75 0" fill="none" stroke="#0A2E6E" stroke-width="9" stroke-linecap="round"/>
+  <!-- fin -->
+  <path d="M600 660 q40 60 110 50 q-30 -50 -110 -50z" fill="#174DAA"/>
+  <!-- title -->
+  <g font-family="Noto Sans CJK KR, sans-serif" text-anchor="middle">
+    <text x="600" y="930" font-size="140" font-weight="900" fill="#ffffff" stroke="#0A2E6E" stroke-width="6" paint-order="stroke">떨고래 마켓</text>
+    <rect x="290" y="975" width="620" height="84" rx="42" fill="#FFD43B"/>
+    <text x="600" y="1032" font-size="46" font-weight="800" fill="#0A2E6E">재고 · 땡처리 도매방</text>
+    <text x="600" y="1130" font-size="38" font-weight="700" fill="#DDF0FF">오늘도 떨고래에서 땡잡으세요!</text>
+  </g>
+</svg>
