@@ -313,6 +313,15 @@ public class OrderRepository {
 			.execute();
 	}
 
+	public void updateRefundAccount(long orderId, String bankName, String accountNoEnc, String holder) {
+		dsl.update(ORDERS)
+			.set(ORDERS.REFUND_BANK_NAME, bankName)
+			.set(ORDERS.REFUND_ACCOUNT_NO_ENC, accountNoEnc)
+			.set(ORDERS.REFUND_ACCOUNT_HOLDER, holder)
+			.where(ORDERS.ID.eq(orderId))
+			.execute();
+	}
+
 	/** 입금 확인: 무통장입금 결제 행을 결제완료로 만든다 */
 	public void insertBankPayment(long orderId, long amount) {
 		dsl.insertInto(PAYMENTS)

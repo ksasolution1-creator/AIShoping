@@ -13,6 +13,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -29,6 +30,7 @@ import com.aishop.api.order.OrderViews.CreateOrder;
 import com.aishop.api.order.OrderViews.OrderLineRequest;
 import com.aishop.api.order.OrderViews.OrderDetail;
 import com.aishop.api.order.OrderViews.OrderSummary;
+import com.aishop.api.order.OrderViews.RefundAccount;
 import com.aishop.api.payment.BankAccount;
 import com.aishop.api.payment.PaymentService;
 import com.aishop.api.payment.PaymentService.Outcome;
@@ -122,6 +124,13 @@ public class OrderController {
 	public OrderDetail confirmPurchase(@AuthenticationPrincipal AuthUser user, @PathVariable String orderNo,
 			@PathVariable long itemId) {
 		return orderService.confirmPurchase(user.id(), orderNo, itemId);
+	}
+
+	/** 무통장입금 환불 계좌 입력·수정 */
+	@PutMapping("/api/orders/{orderNo}/refund-account")
+	public OrderDetail saveRefundAccount(@AuthenticationPrincipal AuthUser user, @PathVariable String orderNo,
+			@Valid @RequestBody RefundAccount body) {
+		return orderService.saveRefundAccount(user.id(), orderNo, body);
 	}
 
 	@PostMapping("/api/orders/{orderNo}/cancel")

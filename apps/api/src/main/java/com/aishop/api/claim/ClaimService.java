@@ -73,6 +73,7 @@ public class ClaimService {
 	public ClaimView cancelItemByCustomer(long userId, String orderNo, long itemId, String reason) {
 		OrdersRecord order = lockCustomerOrder(userId, orderNo);
 		OrderItemsRecord item = requireItem(order, itemId, null);
+		Refunder.requireRefundAccount(order);
 		return cancelItem(order, item, CUSTOMER_CANCELLABLE, "CUSTOMER", userId, blankOr(reason, "고객 요청 취소"));
 	}
 
@@ -139,6 +140,7 @@ public class ClaimService {
 		if (claims.hasOpenClaim(item.getId())) {
 			throw ApiException.conflict("CLAIM_IN_PROGRESS", "이미 처리 중인 반품이 있습니다.");
 		}
+		Refunder.requireRefundAccount(order);
 
 		// 단순변심: 고객 부담. 처음에 무료배송이었으면 왕복, 배송비를 냈으면 편도
 		long returnFee = 0;

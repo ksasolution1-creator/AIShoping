@@ -130,6 +130,7 @@ public class PaymentService {
 			cancelPendingOrder(order);
 			return;
 		}
+		Refunder.requireRefundAccount(order);
 		cancelPaidOrder(order, OrderService.CUSTOMER_CANCELLABLE, reason == null ? "고객 요청 취소" : reason);
 	}
 

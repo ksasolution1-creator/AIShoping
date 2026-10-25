@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { WhaleLoader } from "@/components/brand/WhaleLoader";
 import { TextField } from "@/components/AuthCard";
 import { authApi, ClientApiError, type LoginMethods, type Me } from "@/lib/client-api";
+import { MarketingConsent } from "./MarketingConsent";
 import { PasswordChange } from "./PasswordChange";
 
 const SOCIAL_LABEL: Record<string, string> = { KAKAO: "카카오", NAVER: "네이버" };
@@ -89,6 +90,7 @@ export default function MyPage() {
           </div>
         ))}
         {methods?.hasPassword !== false && <PasswordChange email={me.email} />}
+        <MarketingConsent />
       </section>
 
       <button type="button" onClick={logout} className="h-11 rounded-md border border-line text-sm hover:bg-surface-muted">

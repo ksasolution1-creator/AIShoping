@@ -62,6 +62,13 @@ public final class OrderViews {
 	public record CancelOrder(@Size(max = 200) String reason) {
 	}
 
+	/** 무통장입금 환불 계좌 */
+	public record RefundAccount(@NotBlank(message = "은행을 선택해 주세요.") @Size(max = 30) String bankName,
+			@NotBlank(message = "계좌번호를 입력해 주세요.")
+			@Pattern(regexp = "^[0-9-]{8,20}$", message = "계좌번호는 숫자와 - 만 입력해 주세요.") String accountNo,
+			@NotBlank(message = "예금주를 입력해 주세요.") @Size(max = 30) String holder) {
+	}
+
 	public record ShipOrder(@NotNull(message = "택배사를 선택해 주세요.") Long carrierId,
 			@NotBlank(message = "송장번호를 입력해 주세요.") @Pattern(regexp = "^[0-9-]{8,20}$", message = "송장번호는 숫자 8~20자리입니다.")
 			String trackingNo) {
@@ -107,12 +114,15 @@ public final class OrderViews {
 			String thumbnailUrl, int itemCount, long payAmount, List<String> itemStatuses) {
 	}
 
-	/** @param bankDeposit 무통장입금 주문일 때만 값이 있다 */
+	/**
+	 * @param bankDeposit 무통장입금 주문일 때만 값이 있다
+	 * @param refundAccount 고객이 입력한 환불 계좌 (없으면 null)
+	 */
 	public record OrderDetail(String orderNo, String channel, OffsetDateTime orderedAt, OffsetDateTime paidAt,
 			String status, String ordererName, String ordererEmail, Receiver receiver, List<OrderLineView> items,
 			long itemsTotal, long shippingFee, long discountTotal, long payAmount, String payMethod,
-			BankDeposit bankDeposit, PaymentView payment, List<RefundView> refunds, List<ShipmentView> shipments,
-			boolean cancellable, List<ClaimView> claims) {
+			BankDeposit bankDeposit, RefundAccount refundAccount, PaymentView payment, List<RefundView> refunds,
+			List<ShipmentView> shipments, boolean cancellable, List<ClaimView> claims) {
 	}
 
 }

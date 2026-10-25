@@ -200,6 +200,21 @@ public class Orders extends TableImpl<OrdersRecord> {
      */
     public final TableField<OrdersRecord, OffsetDateTime> DEPOSIT_REMINDED_AT = createField(DSL.name("deposit_reminded_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "");
 
+    /**
+     * The column <code>public.orders.refund_bank_name</code>.
+     */
+    public final TableField<OrdersRecord, String> REFUND_BANK_NAME = createField(DSL.name("refund_bank_name"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.orders.refund_account_no_enc</code>.
+     */
+    public final TableField<OrdersRecord, String> REFUND_ACCOUNT_NO_ENC = createField(DSL.name("refund_account_no_enc"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.orders.refund_account_holder</code>.
+     */
+    public final TableField<OrdersRecord, String> REFUND_ACCOUNT_HOLDER = createField(DSL.name("refund_account_holder"), SQLDataType.CLOB, this, "");
+
     private Orders(Name alias, Table<OrdersRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

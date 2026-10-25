@@ -266,6 +266,8 @@ export type OrderDetail = {
   payMethod: "TOSS" | "BANK_TRANSFER";
   /** 무통장입금 주문일 때만 */
   bankDeposit: { bankName: string; accountNo: string; accountHolder: string; depositorName: string | null; dueAt: string | null } | null;
+  /** 고객이 입력한 무통장입금 환불 계좌 */
+  refundAccount: { bankName: string; accountNo: string; holder: string } | null;
   /** REQUESTED: 고객 계좌로 직접 송금해야 하는 환불, DONE: 환불 완료 */
   refunds: { id: number; amount: number; reason: string; status: "REQUESTED" | "DONE"; createdAt: string; completedAt: string | null }[];
   payment: { method: string | null; easyPayProvider: string | null; amount: number; balanceAmount: number; status: string; approvedAt: string | null } | null;

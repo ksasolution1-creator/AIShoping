@@ -108,9 +108,18 @@ export function AdminOrderDetail({ orderNo }: { orderNo: string }) {
       {pendingRefunds.length > 0 && (
         <section className="card flex flex-col gap-2 border-danger/30 p-4 text-sm">
           <h2 className="font-semibold text-danger">환불 송금 필요</h2>
-          <p className="text-xs text-ink-faint">
-            고객({order.receiver.phone})에게 환불 계좌를 확인하고 아래 금액을 보낸 뒤 송금 완료를 눌러 주세요.
-          </p>
+          {order.refundAccount ? (
+            <p className="rounded bg-surface-muted p-3">
+              환불 계좌: <strong>{order.refundAccount.bankName}</strong>{" "}
+              <span className="font-mono tabular-nums">{order.refundAccount.accountNo}</span> (예금주{" "}
+              {order.refundAccount.holder})
+            </p>
+          ) : (
+            <p className="text-xs text-danger">
+              고객이 입력한 환불 계좌가 없습니다. 고객({order.receiver.phone})에게 계좌를 확인해 주세요.
+            </p>
+          )}
+          <p className="text-xs text-ink-faint">위 계좌로 아래 금액을 보낸 뒤 송금 완료를 눌러 주세요.</p>
           {pendingRefunds.map((r) => (
             <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded bg-surface-muted p-3">
               <span>

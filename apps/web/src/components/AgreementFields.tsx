@@ -25,7 +25,7 @@ function agreementList(collected: string) {
       key: "agreeMarketing",
       label: "할인·이벤트 소식 받기",
       required: false,
-      detail: "동의하지 않아도 가입할 수 있으며, 고객센터에 요청하면 언제든 철회할 수 있습니다.",
+      detail: "동의하지 않아도 가입할 수 있으며, 마이페이지에서 언제든 바꿀 수 있습니다.",
     },
   ] satisfies { key: AgreementKey; label: string; required: boolean; detail?: string; href?: string }[];
 }

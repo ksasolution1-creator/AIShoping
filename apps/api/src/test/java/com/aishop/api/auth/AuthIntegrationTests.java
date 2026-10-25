@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -72,6 +73,24 @@ class AuthIntegrationTests {
 				.content(signupJson(email.toUpperCase())))
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.code").value("EMAIL_IN_USE"));
+	}
+
+	@Test
+	void customerCanWithdrawAndRenewMarketingConsent() throws Exception {
+		Cookie session = signup(uniqueEmail()); // 가입 때 동의함
+
+		mvc.perform(get("/api/me/marketing").cookie(session))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.agreed").value(true));
+
+		mvc.perform(put("/api/me/marketing").with(csrf()).cookie(session)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"agreed\":false}"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.agreed").value(false))
+			.andExpect(jsonPath("$.agreedAt").doesNotExist());
+
+		mvc.perform(get("/api/me/marketing").cookie(session)).andExpect(jsonPath("$.agreed").value(false));
 	}
 
 	@Test

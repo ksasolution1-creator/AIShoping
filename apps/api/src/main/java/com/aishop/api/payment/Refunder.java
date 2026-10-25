@@ -2,6 +2,8 @@ package com.aishop.api.payment;
 
 import org.springframework.stereotype.Component;
 
+import com.aishop.api.common.web.ApiException;
+import com.aishop.api.jooq.tables.records.OrdersRecord;
 import com.aishop.api.jooq.tables.records.PaymentsRecord;
 import com.aishop.api.payment.TossPaymentsClient.TossPayment;
 
@@ -18,6 +20,17 @@ public class Refunder {
 
 	public Refunder(TossPaymentsClient toss) {
 		this.toss = toss;
+	}
+
+	/**
+	 * 입금 후 무통장입금 주문을 고객이 취소·반품하려면 돌려받을 계좌가 있어야 한다.
+	 * 입금 전 주문과 카드 주문은 확인하지 않는다.
+	 */
+	public static void requireRefundAccount(OrdersRecord order) {
+		boolean paidByBank = BANK_TRANSFER.equals(order.getPayMethod()) && !"PENDING_PAYMENT".equals(order.getStatus());
+		if (paidByBank && order.getRefundAccountNoEnc() == null) {
+			throw ApiException.badRequest("REFUND_ACCOUNT_REQUIRED", "환불받을 계좌를 먼저 입력해 주세요.");
+		}
 	}
 
 	/** @param refundStatus refunds.status 값. 토스는 DONE, 무통장입금은 REQUESTED */

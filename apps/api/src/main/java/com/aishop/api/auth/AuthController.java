@@ -11,6 +11,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -76,6 +77,21 @@ public class AuthController {
 			HttpServletRequest request) {
 		authService.changePassword(user.id(), body.currentPassword(), body.newPassword());
 		request.changeSessionId();
+	}
+
+	@GetMapping("/api/me/marketing")
+	public AuthService.MarketingConsent marketing(@AuthenticationPrincipal AuthUser user) {
+		return authService.marketingConsent(user.id());
+	}
+
+	public record ChangeMarketing(boolean agreed) {
+	}
+
+	/** 마케팅 수신 동의·철회 */
+	@PutMapping("/api/me/marketing")
+	public AuthService.MarketingConsent changeMarketing(@AuthenticationPrincipal AuthUser user,
+			@RequestBody ChangeMarketing body, HttpServletRequest request) {
+		return authService.changeMarketingConsent(user.id(), body.agreed(), request.getRemoteAddr());
 	}
 
 	/** 회원 탈퇴 (앱스토어 심사 요건: 앱 안에서 탈퇴 가능해야 함) */

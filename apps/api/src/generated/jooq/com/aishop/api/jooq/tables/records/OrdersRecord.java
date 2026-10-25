@@ -425,6 +425,51 @@ public class OrdersRecord extends UpdatableRecordImpl<OrdersRecord> {
         return (OffsetDateTime) get(26);
     }
 
+    /**
+     * Setter for <code>public.orders.refund_bank_name</code>.
+     */
+    public OrdersRecord setRefundBankName(String value) {
+        set(27, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.orders.refund_bank_name</code>.
+     */
+    public String getRefundBankName() {
+        return (String) get(27);
+    }
+
+    /**
+     * Setter for <code>public.orders.refund_account_no_enc</code>.
+     */
+    public OrdersRecord setRefundAccountNoEnc(String value) {
+        set(28, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.orders.refund_account_no_enc</code>.
+     */
+    public String getRefundAccountNoEnc() {
+        return (String) get(28);
+    }
+
+    /**
+     * Setter for <code>public.orders.refund_account_holder</code>.
+     */
+    public OrdersRecord setRefundAccountHolder(String value) {
+        set(29, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.orders.refund_account_holder</code>.
+     */
+    public String getRefundAccountHolder() {
+        return (String) get(29);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -448,7 +493,7 @@ public class OrdersRecord extends UpdatableRecordImpl<OrdersRecord> {
     /**
      * Create a detached, initialised OrdersRecord
      */
-    public OrdersRecord(Long id, String orderNo, String channel, String externalOrderId, Long userId, String ordererName, String ordererPhoneEnc, String ordererEmail, String receiverName, String receiverPhoneEnc, String receiverZipcode, String receiverAddress1Enc, String receiverAddress2Enc, String deliveryMemo, Long itemsTotal, Long shippingFee, Long discountTotal, Long payAmount, String status, OffsetDateTime orderedAt, OffsetDateTime paidAt, OffsetDateTime createdAt, OffsetDateTime updatedAt, String payMethod, String depositorName, OffsetDateTime depositDueAt, OffsetDateTime depositRemindedAt) {
+    public OrdersRecord(Long id, String orderNo, String channel, String externalOrderId, Long userId, String ordererName, String ordererPhoneEnc, String ordererEmail, String receiverName, String receiverPhoneEnc, String receiverZipcode, String receiverAddress1Enc, String receiverAddress2Enc, String deliveryMemo, Long itemsTotal, Long shippingFee, Long discountTotal, Long payAmount, String status, OffsetDateTime orderedAt, OffsetDateTime paidAt, OffsetDateTime createdAt, OffsetDateTime updatedAt, String payMethod, String depositorName, OffsetDateTime depositDueAt, OffsetDateTime depositRemindedAt, String refundBankName, String refundAccountNoEnc, String refundAccountHolder) {
         super(Orders.ORDERS);
 
         setId(id);
@@ -478,6 +523,9 @@ public class OrdersRecord extends UpdatableRecordImpl<OrdersRecord> {
         setDepositorName(depositorName);
         setDepositDueAt(depositDueAt);
         setDepositRemindedAt(depositRemindedAt);
+        setRefundBankName(refundBankName);
+        setRefundAccountNoEnc(refundAccountNoEnc);
+        setRefundAccountHolder(refundAccountHolder);
         resetTouchedOnNotNull();
     }
 }

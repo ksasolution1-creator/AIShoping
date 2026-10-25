@@ -36,6 +36,7 @@ import com.aishop.api.order.OrderViews.OrderLineView;
 import com.aishop.api.order.OrderViews.OrderSummary;
 import com.aishop.api.order.OrderViews.PaymentView;
 import com.aishop.api.order.OrderViews.Receiver;
+import com.aishop.api.order.OrderViews.RefundAccount;
 import com.aishop.api.order.OrderViews.RefundView;
 import com.aishop.api.order.OrderViews.ShipmentView;
 import com.aishop.api.payment.BankAccount;
@@ -276,6 +277,20 @@ public class OrderService {
 		return myOrder(userId, orderNo);
 	}
 
+	/** 무통장입금 주문의 환불 계좌를 저장한다 (입금 전에 미리 넣어 둘 수도 있다) */
+	@Transactional
+	public OrderDetail saveRefundAccount(long userId, String orderNo, RefundAccount account) {
+		OrdersRecord order = orders.lockByOrderNo(orderNo)
+			.filter(o -> o.getUserId() != null && o.getUserId() == userId)
+			.orElseThrow(() -> ApiException.notFound("주문"));
+		if (!isBankTransfer(order)) {
+			throw ApiException.badRequest("NOT_BANK_TRANSFER", "카드 결제 주문은 결제한 카드로 환불됩니다.");
+		}
+		orders.updateRefundAccount(order.getId(), account.bankName().strip(),
+				cipher.encrypt(account.accountNo().strip()), account.holder().strip());
+		return myOrder(userId, orderNo);
+	}
+
 	@Transactional(readOnly = true)
 	public OrderDetail myOrder(long userId, String orderNo) {
 		OrdersRecord order = orders.findByOrderNo(orderNo)
@@ -414,6 +429,9 @@ public class OrderService {
 		boolean cancellable = !items.isEmpty() && items.stream().allMatch(i -> cancellableNow.contains(i.getStatus()));
 		BankDeposit bankDeposit = isBankTransfer(order) ? new BankDeposit(bank.bankName(), bank.accountNo(),
 				bank.holder(), order.getDepositorName(), order.getDepositDueAt()) : null;
+		RefundAccount refundAccount = order.getRefundAccountNoEnc() == null ? null
+				: new RefundAccount(order.getRefundBankName(), cipher.decrypt(order.getRefundAccountNoEnc()),
+						order.getRefundAccountHolder());
 		List<RefundView> refunds = orders.findRefunds(order.getId()).stream()
 			.map(r -> new RefundView(r.getId(), r.getAmount(), r.getReason(), r.getStatus(), r.getCreatedAt(),
 					r.getCompletedAt()))
@@ -421,7 +439,8 @@ public class OrderService {
 		return new OrderDetail(order.getOrderNo(), order.getChannel(), order.getOrderedAt(), order.getPaidAt(),
 				order.getStatus(), order.getOrdererName(), order.getOrdererEmail(), receiver, lines,
 				order.getItemsTotal(), order.getShippingFee(), order.getDiscountTotal(), order.getPayAmount(),
-				order.getPayMethod(), bankDeposit, payment, refunds, shipments, cancellable, claimsOf(order, items));
+				order.getPayMethod(), bankDeposit, refundAccount, payment, refunds, shipments, cancellable,
+				claimsOf(order, items));
 	}
 
 	/** 화면에 보이는 주문상품(판매자 화면이면 그 판매자 상품)의 취소·반품 내역 */

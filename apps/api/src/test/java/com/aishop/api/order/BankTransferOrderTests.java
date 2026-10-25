@@ -38,6 +38,7 @@ import com.aishop.api.order.OrderViews.CheckoutInfo;
 import com.aishop.api.order.OrderViews.CreateOrder;
 import com.aishop.api.order.OrderViews.OrderDetail;
 import com.aishop.api.order.OrderViews.OrderLineRequest;
+import com.aishop.api.order.OrderViews.RefundAccount;
 import com.aishop.api.payment.PaymentService;
 import com.aishop.api.payment.TossPaymentsClient;
 
@@ -145,11 +146,21 @@ class BankTransferOrderTests {
 		CheckoutInfo checkout = bankOrder(skuId, 1, null);
 		paymentService.confirmDeposit(SELLER, checkout.orderNo());
 
+		// 입금 후 취소는 환불 계좌가 있어야 한다
+		assertThatThrownBy(() -> paymentService.cancelByCustomer(customer.id(), checkout.orderNo(), "단순 변심"))
+			.isInstanceOf(ApiException.class)
+			.extracting("code").isEqualTo("REFUND_ACCOUNT_REQUIRED");
+		orderService.saveRefundAccount(customer.id(), checkout.orderNo(),
+				new RefundAccount("국민은행", "123456-01-234567", "홍길동"));
+		assertThat(dsl.select(ORDERS.REFUND_ACCOUNT_NO_ENC).from(ORDERS).where(ORDERS.ORDER_NO.eq(checkout.orderNo()))
+			.fetchOne(ORDERS.REFUND_ACCOUNT_NO_ENC)).doesNotContain("234567"); // 암호화 저장
+
 		paymentService.cancelByCustomer(customer.id(), checkout.orderNo(), "단순 변심");
 
 		OrderDetail cancelled = orderService.myOrder(customer.id(), checkout.orderNo());
 		assertThat(cancelled.status()).isEqualTo("CANCELLED");
 		assertThat(cancelled.payment().status()).isEqualTo("CANCELED");
+		assertThat(cancelled.refundAccount().accountNo()).isEqualTo("123456-01-234567");
 		assertThat(cancelled.refunds()).singleElement().satisfies(r -> {
 			assertThat(r.amount()).isEqualTo(checkout.amount());
 			assertThat(r.status()).isEqualTo("REQUESTED");
@@ -175,6 +186,10 @@ class BankTransferOrderTests {
 		paymentService.confirmDeposit(SELLER, checkout.orderNo());
 		OrderDetail paid = orderService.myOrder(customer.id(), checkout.orderNo());
 		long secondItemId = paid.items().stream().filter(i -> i.skuId() == second).findFirst().orElseThrow().id();
+		assertThatThrownBy(() -> claimService.cancelItemByCustomer(customer.id(), checkout.orderNo(), secondItemId, "변심"))
+			.isInstanceOf(ApiException.class)
+			.extracting("code").isEqualTo("REFUND_ACCOUNT_REQUIRED");
+		orderService.saveRefundAccount(customer.id(), checkout.orderNo(), new RefundAccount("신한은행", "110-123-456789", "홍길동"));
 
 		claimService.cancelItemByCustomer(customer.id(), checkout.orderNo(), secondItemId, "변심");
 

@@ -1,5 +1,6 @@
 package com.aishop.api.auth;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -91,6 +92,24 @@ public class AuthService {
 	}
 
 	public record LoginMethods(boolean hasPassword, List<String> socialProviders) {
+	}
+
+	/** @param agreedAt 동의한 시각 (동의하지 않았으면 null) */
+	public record MarketingConsent(boolean agreed, OffsetDateTime agreedAt) {
+	}
+
+	@Transactional(readOnly = true)
+	public MarketingConsent marketingConsent(long userId) {
+		UsersRecord user = users.findById(userId).orElseThrow(() -> ApiException.notFound("회원"));
+		return new MarketingConsent(user.getMarketingAgreedAt() != null, user.getMarketingAgreedAt());
+	}
+
+	/** 마이페이지에서 마케팅 수신 동의를 바꾼다. 동의·철회 이력을 남긴다 */
+	@Transactional
+	public MarketingConsent changeMarketingConsent(long userId, boolean agreed, String ip) {
+		users.insertAgreement(userId, "MARKETING", termsVersion, agreed, ip);
+		users.setMarketingAgreed(userId, agreed);
+		return marketingConsent(userId);
 	}
 
 	private void requireEmailFree(SocialProfile profile) {

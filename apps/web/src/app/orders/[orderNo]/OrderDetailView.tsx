@@ -12,6 +12,7 @@ import {
   communityApi,
   gradeLabel,
   ClientApiError,
+  BANKS,
   ITEM_STATUS_LABEL,
   loginUrl,
   orderApi,
@@ -74,6 +75,9 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
   const refundedTotal = order.claims.reduce((sum, c) => sum + (c.refundAmount ?? 0), 0);
   const awaitingDeposit = order.status === "PENDING_PAYMENT" && order.bankDeposit !== null;
   const pendingRefund = order.refunds.filter((r) => r.status === "REQUESTED").reduce((sum, r) => sum + r.amount, 0);
+  // 입금이 끝난 무통장입금 주문은 취소·반품 전에 환불 계좌가 있어야 한다
+  const paidByBank = order.payMethod === "BANK_TRANSFER" && order.payment !== null;
+  const needsRefundAccount = paidByBank && order.refundAccount === null;
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 py-6">
@@ -133,9 +137,19 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
 
       {pendingRefund > 0 && (
         <p className="rounded-xl bg-surface-muted p-4 text-sm text-ink-soft">
-          환불 금액 {formatWon(pendingRefund)}은 담당자가 환불 계좌를 확인한 뒤 직접 보내 드립니다. 주문 시 입력한
-          연락처로 연락드립니다.
+          환불 금액 {formatWon(pendingRefund)}을{" "}
+          {order.refundAccount
+            ? `입력하신 계좌(${order.refundAccount.bankName} ${order.refundAccount.accountNo})로 3영업일 안에 보내 드립니다.`
+            : "아래 환불 계좌로 보내 드립니다. 계좌를 입력해 주세요."}
         </p>
+      )}
+
+      {paidByBank && (
+        <RefundAccountSection
+          account={order.refundAccount}
+          busy={busy}
+          onSave={(account) => run(() => orderApi.saveRefundAccount(order.orderNo, account))}
+        />
       )}
 
       <section className="flex flex-col divide-y divide-line rounded-2xl border border-line">
@@ -151,6 +165,7 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
             onConfirm={() => run(() => orderApi.confirmPurchase(order.orderNo, item.id))}
             onReview={(rating, content) => run(() => communityApi.writeReview(order.orderNo, item.id, rating, content))}
             singleItem={order.items.length === 1}
+            needsRefundAccount={needsRefundAccount}
           />
         ))}
       </section>
@@ -226,13 +241,14 @@ export function OrderDetailView({ orderNo }: { orderNo: string }) {
                 ? "아직 입금 전이라 주문만 취소됩니다. 취소할까요?"
                 : `주문 전체를 취소하면 결제 금액 ${formatWon(order.payAmount)}이 환불됩니다. 취소할까요?`}
             </p>
+            {needsRefundAccount && <RefundAccountNotice />}
             <div className="grid grid-cols-2 gap-2">
               <button type="button" onClick={() => setConfirmingCancel(false)} className="h-11 rounded-xl border border-line text-sm">
                 그대로 두기
               </button>
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || needsRefundAccount}
                 onClick={async () => {
                   if (await run(() => orderApi.cancel(orderNo, "고객 요청 취소"))) setConfirmingCancel(false);
                 }}
@@ -256,6 +272,7 @@ function ItemRow({
   claims,
   busy,
   singleItem,
+  needsRefundAccount,
   onCancel,
   onReturn,
   onWithdraw,
@@ -266,6 +283,7 @@ function ItemRow({
   claims: Claim[];
   busy: boolean;
   singleItem: boolean;
+  needsRefundAccount: boolean;
   onCancel: () => Promise<boolean>;
   onReturn: (reason: string, detail: string) => Promise<boolean>;
   onWithdraw: (claimId: number) => Promise<boolean>;
@@ -395,13 +413,14 @@ function ItemRow({
       {mode === "cancel" && (
         <div className="flex flex-col gap-2 rounded-xl border border-sale/30 p-3 text-sm">
           <p>{singleItem ? "주문을 취소하면 결제 금액이 모두 환불됩니다." : `이 상품 ${formatWon(item.lineTotal)}을 취소하고 환불합니다.`}</p>
+          {needsRefundAccount && <RefundAccountNotice />}
           <div className="flex gap-2">
             <button type="button" onClick={() => setMode("none")} className="h-9 flex-1 rounded-lg border border-line">
               그대로 두기
             </button>
             <button
               type="button"
-              disabled={busy}
+              disabled={busy || needsRefundAccount}
               onClick={async () => {
                 if (await onCancel()) setMode("none");
               }}
@@ -455,11 +474,12 @@ function ItemRow({
             placeholder="상세 내용 (선택)"
             className="rounded-lg border border-line p-2"
           />
+          {needsRefundAccount && <RefundAccountNotice />}
           <div className="flex gap-2">
             <button type="button" onClick={() => setMode("none")} className="h-9 flex-1 rounded-lg border border-line">
               닫기
             </button>
-            <button type="submit" disabled={busy || !reason} className="h-9 flex-1 rounded-lg bg-brand font-semibold text-white disabled:opacity-50">
+            <button type="submit" disabled={busy || !reason || needsRefundAccount} className="h-9 flex-1 rounded-lg bg-brand font-semibold text-white disabled:opacity-50">
               반품 신청
             </button>
           </div>
@@ -522,6 +542,107 @@ function ReviewForm({
           className="h-9 flex-1 rounded-lg bg-brand font-semibold text-white disabled:opacity-50"
         >
           후기 올리기
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function RefundAccountNotice() {
+  return <p className="text-xs font-medium text-sale">환불받을 계좌를 위 &lsquo;환불 계좌&rsquo;에 먼저 입력해 주세요.</p>;
+}
+
+/** 무통장입금 환불 계좌: 입금 후 취소·반품하려면 필요하다 */
+function RefundAccountSection({
+  account,
+  busy,
+  onSave,
+}: {
+  account: OrderDetail["refundAccount"];
+  busy: boolean;
+  onSave: (account: { bankName: string; accountNo: string; holder: string }) => Promise<boolean>;
+}) {
+  const [editing, setEditing] = useState(account === null);
+
+  if (account && !editing) {
+    return (
+      <section className="flex items-center justify-between gap-3 rounded-2xl border border-line p-4 text-sm">
+        <div className="flex flex-col gap-0.5">
+          <span className="font-bold">환불 계좌</span>
+          <span className="text-ink-soft">
+            {account.bankName} <span className="font-mono tabular-nums">{account.accountNo}</span> · {account.holder}
+          </span>
+        </div>
+        <button type="button" onClick={() => setEditing(true)} className="shrink-0 text-xs text-ink-soft underline">
+          변경
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <form
+      className="flex flex-col gap-3 rounded-2xl border border-line p-4 text-sm"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        const data = new FormData(e.currentTarget);
+        const value = (key: string) => String(data.get(key) ?? "").trim();
+        if (await onSave({ bankName: value("bankName"), accountNo: value("accountNo"), holder: value("holder") })) {
+          setEditing(false);
+        }
+      }}
+    >
+      <div className="flex flex-col gap-0.5">
+        <span className="font-bold">환불 계좌</span>
+        <span className="text-xs text-ink-faint">
+          무통장입금 주문을 취소·반품하면 이 계좌로 환불해 드립니다. 계좌번호는 암호화해서 보관합니다.
+        </span>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-[9rem_1fr_7rem]">
+        <select
+          name="bankName"
+          required
+          defaultValue={account?.bankName ?? ""}
+          aria-label="은행"
+          className="h-10 rounded-lg border border-line px-2"
+        >
+          <option value="" disabled>
+            은행 선택
+          </option>
+          {BANKS.map((b) => (
+            <option key={b} value={b}>
+              {b}
+            </option>
+          ))}
+        </select>
+        <input
+          name="accountNo"
+          required
+          inputMode="numeric"
+          pattern="[0-9\-]{8,20}"
+          placeholder="계좌번호 (숫자만)"
+          defaultValue={account?.accountNo ?? ""}
+          aria-label="계좌번호"
+          className="h-10 rounded-lg border border-line px-3 font-mono"
+        />
+        <input
+          name="holder"
+          required
+          maxLength={30}
+          placeholder="예금주"
+          defaultValue={account?.holder ?? ""}
+          aria-label="예금주"
+          className="h-10 rounded-lg border border-line px-3"
+        />
+      </div>
+      <div className="flex gap-2">
+        {account && (
+          <button type="button" onClick={() => setEditing(false)} className="h-9 flex-1 rounded-lg border border-line">
+            취소
+          </button>
+        )}
+        <button type="submit" disabled={busy} className="h-9 flex-1 rounded-lg bg-brand font-semibold text-white disabled:opacity-50">
+          저장
         </button>
       </div>
     </form>

@@ -10,6 +10,16 @@ export type Me = {
   sellerId: number | null;
 };
 
+/** 마케팅 수신 동의. agreedAt은 동의한 시각 */
+export type MarketingConsent = { agreed: boolean; agreedAt: string | null };
+
+/** 환불 계좌 은행 목록 */
+export const BANKS = [
+  "국민은행", "신한은행", "우리은행", "하나은행", "기업은행", "농협은행", "카카오뱅크", "토스뱅크", "케이뱅크",
+  "SC제일은행", "씨티은행", "부산은행", "대구은행(iM뱅크)", "경남은행", "광주은행", "전북은행", "제주은행",
+  "수협은행", "새마을금고", "신협", "우체국", "산업은행",
+];
+
 export class ClientApiError extends Error {
   constructor(
     public status: number,
@@ -108,6 +118,9 @@ export const authApi = {
     agreeMarketing: boolean;
   }) => apiRequest<Me>("/api/auth/social/signup", { method: "POST", body: JSON.stringify(body) }),
   loginMethods: () => apiRequest<LoginMethods>("/api/me/login-methods"),
+  marketing: () => apiRequest<MarketingConsent>("/api/me/marketing"),
+  changeMarketing: (agreed: boolean) =>
+    apiRequest<MarketingConsent>("/api/me/marketing", { method: "PUT", body: JSON.stringify({ agreed }) }),
   withdraw: (password: string) =>
     apiRequest<void>("/api/me/withdraw", { method: "POST", body: JSON.stringify({ password }) }),
   changePassword: (currentPassword: string, newPassword: string) =>
@@ -244,6 +257,8 @@ export type OrderDetail = {
     depositorName: string | null;
     dueAt: string | null;
   } | null;
+  /** 고객이 입력한 무통장입금 환불 계좌 */
+  refundAccount: { bankName: string; accountNo: string; holder: string } | null;
   /** REQUESTED: 무통장입금 환불 송금 대기, DONE: 환불 완료 */
   refunds: { id: number; amount: number; reason: string; status: "REQUESTED" | "DONE"; createdAt: string; completedAt: string | null }[];
   payment: {
@@ -350,6 +365,8 @@ export const orderApi = {
   abandon: (orderNo: string) => apiRequest<void>(`/api/orders/${orderNo}/abandon`, { method: "POST" }),
   list: (page = 0) => apiRequest<Page<OrderSummary>>(`/api/orders?page=${page}`),
   detail: (orderNo: string) => apiRequest<OrderDetail>(`/api/orders/${orderNo}`),
+  saveRefundAccount: (orderNo: string, account: { bankName: string; accountNo: string; holder: string }) =>
+    apiRequest<OrderDetail>(`/api/orders/${orderNo}/refund-account`, { method: "PUT", body: JSON.stringify(account) }),
   cancel: (orderNo: string, reason: string) =>
     apiRequest<OrderDetail>(`/api/orders/${orderNo}/cancel`, { method: "POST", body: JSON.stringify({ reason }) }),
   confirmPurchase: (orderNo: string, itemId: number) =>
