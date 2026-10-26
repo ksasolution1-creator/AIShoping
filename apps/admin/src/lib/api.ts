@@ -95,6 +95,8 @@ export type AdminProductDetail = {
   description: string | null;
   noticeInfo: Record<string, string>;
   kcCertNo: string | null;
+  /** 소비기한 yyyy-MM-dd (없으면 null) */
+  expiryDate: string | null;
   shippingFee: number;
   freeShippingThreshold: number | null;
   status: ProductStatus;
@@ -125,6 +127,8 @@ export type ProductFields = {
   description: string | null;
   noticeInfo: Record<string, string>;
   kcCertNo: string | null;
+  /** 소비기한 yyyy-MM-dd (없으면 null) */
+  expiryDate: string | null;
   shippingFee: number;
   freeShippingThreshold: number | null;
 };
@@ -828,6 +832,8 @@ export type AiDraft = {
   listPrice: number;
   barcode: string;
   kcCertNo: string;
+  /** 사진에서 읽은 소비기한 yyyy-MM-dd, 안 보이면 빈 문자열 */
+  expiryDate: string;
   notice: { key: string; value: string }[];
   /** 저장 전에 직접 확인할 점 */
   warnings: string[];

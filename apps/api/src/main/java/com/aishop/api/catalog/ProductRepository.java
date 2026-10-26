@@ -124,7 +124,7 @@ public class ProductRepository {
 			.fetchOptional()
 			.map(p -> new ShopProductDetail(
 					p.getId(), p.getName(), p.getBrand(), p.getModelName(), p.getCategoryId(), p.getDescription(),
-					jsonb.toStringMap(p.getNoticeInfo()), p.getKcCertNo(), p.getShippingFee(),
+					jsonb.toStringMap(p.getNoticeInfo()), p.getKcCertNo(), p.getExpiryDate(), p.getShippingFee(),
 					p.getFreeShippingThreshold(), p.getBusinessOnly(), p.getImageReuseAllowed(), wholesale.find(productId),
 					spec(p), returnInfo(p), categoryPath(p.getCategoryId()), findShopSkus(productId),
 					findImages(productId)));
@@ -274,7 +274,7 @@ public class ProductRepository {
 		return findProductRecord(sellerId, productId)
 			.map(p -> new AdminProductDetail(
 					p.getId(), p.getSellerId(), p.getName(), p.getBrand(), p.getModelName(), p.getCategoryId(),
-					p.getDescription(), jsonb.toStringMap(p.getNoticeInfo()), p.getKcCertNo(), p.getShippingFee(),
+					p.getDescription(), jsonb.toStringMap(p.getNoticeInfo()), p.getKcCertNo(), p.getExpiryDate(), p.getShippingFee(),
 					p.getFreeShippingThreshold(), ProductStatus.valueOf(p.getStatus()), p.getCreatedAt(),
 					p.getUpdatedAt(), p.getBusinessOnly(), p.getImageReuseAllowed(), wholesale.find(productId),
 					spec(p), findAdminSkus(productId), findImages(productId)));
@@ -368,6 +368,7 @@ public class ProductRepository {
 			.set(PRODUCTS.DESCRIPTION, f.description())
 			.set(PRODUCTS.NOTICE_INFO, jsonb.toJsonb(f.noticeInfo()))
 			.set(PRODUCTS.KC_CERT_NO, blankToNull(f.kcCertNo()))
+			.set(PRODUCTS.EXPIRY_DATE, f.expiryDate())
 			.set(PRODUCTS.SHIPPING_FEE, f.shippingFee())
 			.set(PRODUCTS.FREE_SHIPPING_THRESHOLD, f.freeShippingThreshold())
 			.returning(PRODUCTS.ID)
@@ -383,6 +384,7 @@ public class ProductRepository {
 			.set(PRODUCTS.DESCRIPTION, f.description())
 			.set(PRODUCTS.NOTICE_INFO, jsonb.toJsonb(f.noticeInfo()))
 			.set(PRODUCTS.KC_CERT_NO, blankToNull(f.kcCertNo()))
+			.set(PRODUCTS.EXPIRY_DATE, f.expiryDate())
 			.set(PRODUCTS.SHIPPING_FEE, f.shippingFee())
 			.set(PRODUCTS.FREE_SHIPPING_THRESHOLD, f.freeShippingThreshold())
 			.where(PRODUCTS.ID.eq(productId))

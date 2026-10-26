@@ -18,6 +18,7 @@ import com.aishop.api.jooq.tables.Users.UsersPath;
 import com.aishop.api.jooq.tables.Wishlists.WishlistsPath;
 import com.aishop.api.jooq.tables.records.ProductsRecord;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -180,6 +181,11 @@ public class Products extends TableImpl<ProductsRecord> {
      * The column <code>public.products.package_weight_g</code>.
      */
     public final TableField<ProductsRecord, Integer> PACKAGE_WEIGHT_G = createField(DSL.name("package_weight_g"), SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column <code>public.products.expiry_date</code>.
+     */
+    public final TableField<ProductsRecord, LocalDate> EXPIRY_DATE = createField(DSL.name("expiry_date"), SQLDataType.LOCALDATE, this, "");
 
     private Products(Name alias, Table<ProductsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);

@@ -47,6 +47,7 @@ export function NewProductForm() {
         categoryId: ai.categoryId ? String(ai.categoryId) : d.categoryId,
         description: ai.description || d.description,
         kcCertNo: ai.kcCertNo || d.kcCertNo,
+        expiryDate: ai.expiryDate || d.expiryDate,
         notice,
       };
     });

@@ -1,6 +1,8 @@
 package com.aishop.api.catalog;
 
 import java.io.IOException;
+import java.time.DateTimeException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -66,6 +68,8 @@ public class AiProductDrafter {
 			  가격·할인·배송 이야기와 "최고", "완벽" 같은 과장 표현은 쓰지 않습니다.
 			- listPrice: 가격표·박스에 정가가 인쇄되어 보일 때만 그 금액(원). 아니면 0. 시세를 추정하지 마세요.
 			- barcode: 바코드 아래 숫자가 또렷이 읽힐 때만. kcCertNo: KC 인증번호가 보일 때만.
+			- expiryDate: 식품·건강기능식품·화장품 등에 소비기한(유통기한)이 인쇄되어 또렷이 보일 때만 yyyy-MM-dd.
+			  안 보이거나 흐리면 빈 문자열이고, 먹는 상품인데 안 보이면 warnings에 적습니다.
 			- notice: 라벨에서 읽히는 상품정보 제공고시 항목만 (예: 제조국=중국, 제조사(수입자)=OO, 소재=면 100%).
 			- warnings: 운영자가 저장 전에 직접 확인해야 할 점 (예: "구성품 전체가 사진에 없음", "모델명 일부가 가려짐").
 			""";
@@ -87,7 +91,7 @@ public class AiProductDrafter {
 	/** 사진에서 읽은 상품 정보 초안. 구조화 출력 스키마로 그대로 쓰인다 */
 	public record AiDraft(String name, String brand, String modelName, long categoryId, ConditionGrade conditionGrade,
 			String conditionNote, String options, String description, long listPrice, String barcode,
-			String kcCertNo, List<NoticeItem> notice, List<String> warnings) {
+			String kcCertNo, String expiryDate, List<NoticeItem> notice, List<String> warnings) {
 	}
 
 	public record NoticeItem(String key, String value) {
@@ -188,11 +192,21 @@ public class AiProductDrafter {
 		boolean knownCategory = categories.stream().anyMatch(c -> c.id() == d.categoryId());
 		return new AiDraft(trim(d.name()), trim(d.brand()), trim(d.modelName()), knownCategory ? d.categoryId() : 0,
 				d.conditionGrade(), trim(d.conditionNote()), trim(d.options()), trim(d.description()),
-				Math.max(d.listPrice(), 0), trim(d.barcode()), trim(d.kcCertNo()),
+				Math.max(d.listPrice(), 0), trim(d.barcode()), trim(d.kcCertNo()), isoDate(d.expiryDate()),
 				d.notice() == null ? List.of() : d.notice().stream()
 					.filter(n -> n != null && !trim(n.key()).isEmpty() && !trim(n.value()).isEmpty())
 					.toList(),
 				d.warnings() == null ? List.of() : d.warnings());
+	}
+
+	/** yyyy-MM-dd로 읽힌 날짜만 쓴다 (잘못 읽은 값으로 입력칸이 깨지지 않게) */
+	private static String isoDate(String s) {
+		try {
+			return LocalDate.parse(trim(s)).toString();
+		}
+		catch (DateTimeException e) {
+			return "";
+		}
 	}
 
 	private static String trim(String s) {

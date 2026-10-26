@@ -3,6 +3,7 @@ package com.aishop.api.catalog;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -55,6 +56,23 @@ class ProductServiceTests {
 			.containsExactly(ConditionGrade.RETURN_UNOPENED, ConditionGrade.USED_B);
 		assertThat(detail.skus()).extracting(CatalogViews.AdminSku::onHand).containsExactly(3, 1);
 		assertThat(detail.skus().getFirst().skuCode()).isEqualTo("P" + productId + "-1");
+	}
+
+	@Test
+	void expiryDateIsSavedAndShownInShop() {
+		ProductFields fields = new ProductFields("참치캔 " + uniq(), null, null, null, null, Map.of(), null, 3_000L,
+				null, LocalDate.of(2027, 3, 1));
+		long productId = productService.createProduct(SELLER,
+				new CreateProduct(fields, List.of(sku(ConditionGrade.NEW, 10_000L, 5))));
+		productService.changeStatus(SELLER, productId, ProductStatus.ON_SALE);
+
+		assertThat(productService.getAdminProduct(SELLER, productId).expiryDate()).isEqualTo(LocalDate.of(2027, 3, 1));
+		assertThat(productService.getShopProduct(productId).expiryDate()).isEqualTo(LocalDate.of(2027, 3, 1));
+
+		// 수정 화면에서 비우면 지워진다
+		productService.updateProduct(SELLER, productId, new ProductFields(fields.name(), null, null, null, null,
+				Map.of(), null, 3_000L, null, null));
+		assertThat(productService.getShopProduct(productId).expiryDate()).isNull();
 	}
 
 	@Test

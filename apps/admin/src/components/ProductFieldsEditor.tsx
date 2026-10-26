@@ -12,6 +12,8 @@ export type ProductDraft = {
   categoryId: string;
   description: string;
   kcCertNo: string;
+  /** yyyy-MM-dd, 비우면 소비기한 없음 */
+  expiryDate: string;
   shippingFee: string;
   freeShippingThreshold: string;
   notice: { key: string; value: string }[];
@@ -27,6 +29,7 @@ export function emptyDraft(): ProductDraft {
     categoryId: "",
     description: "",
     kcCertNo: "",
+    expiryDate: "",
     shippingFee: "3000",
     freeShippingThreshold: "50000",
     notice: DEFAULT_NOTICE.map((key) => ({ key, value: "" })),
@@ -42,6 +45,7 @@ export function draftFromProduct(p: AdminProductDetail): ProductDraft {
     categoryId: p.categoryId ? String(p.categoryId) : "",
     description: p.description ?? "",
     kcCertNo: p.kcCertNo ?? "",
+    expiryDate: p.expiryDate ?? "",
     shippingFee: String(p.shippingFee),
     freeShippingThreshold: p.freeShippingThreshold == null ? "" : String(p.freeShippingThreshold),
     notice: notice.length ? notice : DEFAULT_NOTICE.map((key) => ({ key, value: "" })),
@@ -58,6 +62,7 @@ export function draftToFields(d: ProductDraft): ProductFields {
     categoryId: d.categoryId ? Number(d.categoryId) : null,
     description: nullIfBlank(d.description),
     kcCertNo: nullIfBlank(d.kcCertNo),
+    expiryDate: d.expiryDate || null,
     shippingFee: Number(d.shippingFee || 0),
     freeShippingThreshold: d.freeShippingThreshold ? Number(d.freeShippingThreshold) : null,
     noticeInfo: Object.fromEntries(
@@ -126,6 +131,22 @@ export function ProductFieldsEditor({
           value={value.kcCertNo}
           onChange={(e) => set("kcCertNo", e.target.value)}
         />
+      </Field>
+      <Field label="소비기한 (식품·건강식품·화장품 등)" error={err("expiryDate")}>
+        <div className="flex gap-2">
+          <input
+            id="p-expiry"
+            type="date"
+            className="input flex-1"
+            value={value.expiryDate}
+            onChange={(e) => set("expiryDate", e.target.value)}
+          />
+          {value.expiryDate && (
+            <button type="button" className="btn-outline px-2.5" onClick={() => set("expiryDate", "")}>
+              지우기
+            </button>
+          )}
+        </div>
       </Field>
       <Field label="배송비 (원) *" error={err("shippingFee")}>
         <input

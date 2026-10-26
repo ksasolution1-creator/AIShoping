@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Jua } from "next/font/google";
+import { Suspense } from "react";
 
+import { FreshOnReturn } from "@/components/FreshOnReturn";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
@@ -28,6 +30,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <SiteHeader />
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 sm:px-6">{children}</main>
         <SiteFooter />
+        <Suspense>
+          <FreshOnReturn />
+        </Suspense>
       </body>
     </html>
   );

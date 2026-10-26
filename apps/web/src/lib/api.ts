@@ -82,6 +82,8 @@ export type ProductDetail = {
   description: string | null;
   noticeInfo: Record<string, string>;
   kcCertNo: string | null;
+  /** 소비기한 yyyy-MM-dd (없으면 null) */
+  expiryDate: string | null;
   shippingFee: number;
   freeShippingThreshold: number | null;
   businessOnly: boolean;

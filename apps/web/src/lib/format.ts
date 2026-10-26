@@ -30,6 +30,11 @@ export function shipWithinText(days: number) {
   return days === 0 ? "결제 당일 출고" : `결제 후 ${days}일 이내 출고`;
 }
 
+/** 2027-03-01 → 2027.03.01 */
+export function formatDate(isoDate: string) {
+  return isoDate.replaceAll("-", ".");
+}
+
 export function optionText(optionValues: Record<string, string>) {
   return Object.entries(optionValues)
     .map(([key, value]) => `${key} ${value}`)

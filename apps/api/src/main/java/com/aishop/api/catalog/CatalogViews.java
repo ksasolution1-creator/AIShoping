@@ -1,5 +1,6 @@
 package com.aishop.api.catalog;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +59,7 @@ public final class CatalogViews {
 			String description,
 			Map<String, String> noticeInfo,
 			String kcCertNo,
+			LocalDate expiryDate,
 			long shippingFee,
 			Long freeShippingThreshold,
 			boolean businessOnly,
@@ -127,6 +129,7 @@ public final class CatalogViews {
 			String description,
 			Map<String, String> noticeInfo,
 			String kcCertNo,
+			LocalDate expiryDate,
 			long shippingFee,
 			Long freeShippingThreshold,
 			ProductStatus status,

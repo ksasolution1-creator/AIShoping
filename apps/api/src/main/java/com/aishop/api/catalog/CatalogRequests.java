@@ -1,5 +1,6 @@
 package com.aishop.api.catalog;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +34,15 @@ public final class CatalogRequests {
 			Map<String, String> noticeInfo,
 			@Size(max = 50) String kcCertNo,
 			@NotNull @PositiveOrZero Long shippingFee,
-			@PositiveOrZero Long freeShippingThreshold) {
+			@PositiveOrZero Long freeShippingThreshold,
+			LocalDate expiryDate) {
+
+		/** 소비기한이 없는 상품 */
+		public ProductFields(String name, String brand, String modelName, Long categoryId, String description,
+				Map<String, String> noticeInfo, String kcCertNo, Long shippingFee, Long freeShippingThreshold) {
+			this(name, brand, modelName, categoryId, description, noticeInfo, kcCertNo, shippingFee,
+					freeShippingThreshold, null);
+		}
 	}
 
 	public record CreateProduct(

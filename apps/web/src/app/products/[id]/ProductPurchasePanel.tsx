@@ -9,7 +9,7 @@ import { PriceTag } from "@/components/PriceTag";
 import { ProductImage } from "@/components/ProductImage";
 import type { ProductDetail } from "@/lib/api";
 import { authApi, cartApi, ClientApiError, communityApi, loginUrl } from "@/lib/client-api";
-import { formatRate, formatWon, optionText, shipWithinText, tierBpFor, tierUnitDiscount } from "@/lib/format";
+import { formatDate, formatRate, formatWon, optionText, shipWithinText, tierBpFor, tierUnitDiscount } from "@/lib/format";
 
 export function ProductPurchasePanel({ product }: { product: ProductDetail }) {
   const router = useRouter();
@@ -117,6 +117,13 @@ export function ProductPurchasePanel({ product }: { product: ProductDetail }) {
         </div>
 
         {sku && <PriceTag price={sku.price} listPrice={sku.listPrice} size="lg" />}
+
+        {product.expiryDate && (
+          <p className="-mt-2 self-start rounded-md bg-surface-muted px-3 py-1.5 text-sm">
+            <span className="text-ink-faint">소비기한</span>{" "}
+            <strong className="font-semibold">{formatDate(product.expiryDate)}까지</strong>
+          </p>
+        )}
 
         <dl className="grid grid-cols-[6.5rem_1fr] gap-y-1.5 border-y border-line py-3 text-sm">
           <dt className="text-ink-faint">구매수량</dt>

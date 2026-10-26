@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { ApiError, fetchProduct } from "@/lib/api";
-import { formatWon } from "@/lib/format";
+import { formatDate, formatWon } from "@/lib/format";
 import { ProductCommunity } from "./ProductCommunity";
 import { ProductPurchasePanel } from "./ProductPurchasePanel";
 
@@ -130,6 +130,7 @@ async function ProductDetail({ params }: { params: Params }) {
               {product.brand && <NoticeRow label="브랜드" value={product.brand} />}
               {product.modelName && <NoticeRow label="모델명" value={product.modelName} />}
               {product.kcCertNo && <NoticeRow label="KC 인증번호" value={product.kcCertNo} />}
+              {product.expiryDate && <NoticeRow label="소비기한" value={`${formatDate(product.expiryDate)}까지`} />}
               {notice.map(([label, value]) => (
                 <NoticeRow key={label} label={label} value={value} />
               ))}

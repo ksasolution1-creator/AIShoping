@@ -6,6 +6,7 @@ package com.aishop.api.jooq.tables.records;
 
 import com.aishop.api.jooq.tables.Products;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 import org.jooq.JSONB;
@@ -351,6 +352,21 @@ public class ProductsRecord extends UpdatableRecordImpl<ProductsRecord> {
         return (Integer) get(21);
     }
 
+    /**
+     * Setter for <code>public.products.expiry_date</code>.
+     */
+    public ProductsRecord setExpiryDate(LocalDate value) {
+        set(22, value);
+        return this;
+    }
+
+    /**
+     * Getter for <code>public.products.expiry_date</code>.
+     */
+    public LocalDate getExpiryDate() {
+        return (LocalDate) get(22);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -374,7 +390,7 @@ public class ProductsRecord extends UpdatableRecordImpl<ProductsRecord> {
     /**
      * Create a detached, initialised ProductsRecord
      */
-    public ProductsRecord(Long id, Long sellerId, Long categoryId, String name, String brand, String modelName, String description, JSONB noticeInfo, String kcCertNo, Long shippingFee, Long freeShippingThreshold, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt, Integer minOrderQty, Integer shipWithinDays, Boolean businessOnly, Boolean imageReuseAllowed, String origin, String manufacturer, String packageSize, Integer packageWeightG) {
+    public ProductsRecord(Long id, Long sellerId, Long categoryId, String name, String brand, String modelName, String description, JSONB noticeInfo, String kcCertNo, Long shippingFee, Long freeShippingThreshold, String status, OffsetDateTime createdAt, OffsetDateTime updatedAt, Integer minOrderQty, Integer shipWithinDays, Boolean businessOnly, Boolean imageReuseAllowed, String origin, String manufacturer, String packageSize, Integer packageWeightG, LocalDate expiryDate) {
         super(Products.PRODUCTS);
 
         setId(id);
@@ -399,6 +415,7 @@ public class ProductsRecord extends UpdatableRecordImpl<ProductsRecord> {
         setManufacturer(manufacturer);
         setPackageSize(packageSize);
         setPackageWeightG(packageWeightG);
+        setExpiryDate(expiryDate);
         resetTouchedOnNotNull();
     }
 }
