@@ -216,7 +216,7 @@ export function ProductList() {
                   <StatusChip status={p.status} />
                 </td>
                 <td className="px-3 py-2">
-                  <ul className="flex min-w-96 flex-col gap-1">
+                  <ul className="flex min-w-[26rem] flex-col gap-1">
                     {p.skus.map((sku) => (
                       <li key={sku.skuId} className="flex items-center gap-2">
                         <GradeQuickEdit
@@ -226,7 +226,7 @@ export function ProductList() {
                         <span className="ml-auto">
                           <PriceQuickEdit sku={sku} onSaved={(price) => updateSku(p.id, sku.skuId, { price })} />
                         </span>
-                        <span className="w-28 text-right">
+                        <span className="min-w-28 shrink-0 text-right">
                           <StockQuickEdit sku={sku} onSaved={(stock) => updateSku(p.id, sku.skuId, stock)} />
                         </span>
                       </li>
