@@ -9,6 +9,7 @@ import { ConfirmButton } from "@/components/ConfirmButton";
 import { GradeQuickEdit, gradeLabel } from "@/components/GradeQuickEdit";
 import { PriceQuickEdit } from "@/components/PriceQuickEdit";
 import { StatusChip } from "@/components/StatusChip";
+import { StockQuickEdit } from "@/components/StockQuickEdit";
 import { Thumb } from "@/components/Thumb";
 import {
   api,
@@ -85,7 +86,7 @@ export function ProductList() {
     }
   }
 
-  /** 등급·판매가를 바꾼 뒤 목록을 다시 부르지 않고 그 줄만 바꾼다 */
+  /** 등급·판매가·재고를 바꾼 뒤 목록을 다시 부르지 않고 그 줄만 바꾼다 */
   function updateSku(productId: number, skuId: number, change: Partial<ListSku>) {
     setData((d) =>
       d && {
@@ -184,8 +185,7 @@ export function ProductList() {
               <th className="px-3 py-2.5 font-medium">상품</th>
               <th className="px-3 py-2.5 font-medium">카테고리</th>
               <th className="px-3 py-2.5 font-medium">상태</th>
-              <th className="px-3 py-2.5 font-medium">상태등급 · 판매가 (눌러서 변경)</th>
-              <th className="px-3 py-2.5 text-right font-medium">재고 (예약)</th>
+              <th className="px-3 py-2.5 font-medium">상태등급 · 판매가 · 재고 (눌러서 변경)</th>
               <th className="px-3 py-2.5 font-medium">등록일</th>
             </tr>
           </thead>
@@ -216,36 +216,37 @@ export function ProductList() {
                   <StatusChip status={p.status} />
                 </td>
                 <td className="px-3 py-2">
-                  <ul className="flex min-w-64 flex-col gap-1">
+                  <ul className="flex min-w-96 flex-col gap-1">
                     {p.skus.map((sku) => (
-                      <li key={sku.skuId} className="flex items-center justify-between gap-2">
+                      <li key={sku.skuId} className="flex items-center gap-2">
                         <GradeQuickEdit
                           sku={sku}
                           onSaved={(code) => updateSku(p.id, sku.skuId, { grade: { code, label: gradeLabel(code) } })}
                         />
-                        <PriceQuickEdit sku={sku} onSaved={(price) => updateSku(p.id, sku.skuId, { price })} />
+                        <span className="ml-auto">
+                          <PriceQuickEdit sku={sku} onSaved={(price) => updateSku(p.id, sku.skuId, { price })} />
+                        </span>
+                        <span className="w-28 text-right">
+                          <StockQuickEdit sku={sku} onSaved={(stock) => updateSku(p.id, sku.skuId, stock)} />
+                        </span>
                       </li>
                     ))}
                     {p.skus.length === 0 && <li className="text-ink-faint">판매 단위 없음</li>}
                   </ul>
-                </td>
-                <td className="px-3 py-2 text-right tabular-nums">
-                  <span className={p.onHand - p.reserved <= 0 ? "font-semibold text-danger" : ""}>{p.onHand}</span>
-                  {p.reserved > 0 && <span className="text-ink-faint"> ({p.reserved})</span>}
                 </td>
                 <td className="px-3 py-2 text-xs text-ink-faint tabular-nums">{formatDate(p.createdAt)}</td>
               </tr>
             ))}
             {data && data.items.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-3 py-12 text-center text-ink-faint">
+                <td colSpan={6} className="px-3 py-12 text-center text-ink-faint">
                   상품이 없습니다. 오른쪽 위 &lsquo;상품 등록&rsquo;으로 첫 상품을 등록하세요.
                 </td>
               </tr>
             )}
             {!data && !error && (
               <tr>
-                <td colSpan={7}>
+                <td colSpan={6}>
                   <WhaleLoader size="sm" label="상품을 불러오는 중이에요" />
                 </td>
               </tr>

@@ -174,6 +174,24 @@ class ProductServiceTests {
 	}
 
 	@Test
+	void setStockToTargetQuantity() {
+		long productId = createProduct("재고 맞추기 " + uniq(), null, sku(ConditionGrade.NEW, 10_000L, 5));
+		long skuId = productService.getAdminProduct(SELLER, productId).skus().getFirst().id();
+
+		assertThat(productService.setStock(SELLER, skuId, 8, null)).containsExactly(8, 0);
+		assertThat(productService.setStock(SELLER, skuId, 3, null)).containsExactly(3, 0);
+		assertThat(productService.getAdminProduct(SELLER, productId).skus().getFirst().onHand()).isEqualTo(3);
+
+		// 주문이 잡아 둔 2개보다 적게는 못 줄인다
+		inventory.reserve(skuId, WAREHOUSE, 2);
+		assertThatThrownBy(() -> productService.setStock(SELLER, skuId, 1, null))
+			.isInstanceOf(ApiException.class).extracting("code").isEqualTo("INSUFFICIENT_STOCK");
+		assertThat(productService.setStock(SELLER, skuId, 2, null)).containsExactly(2, 2);
+		assertThatThrownBy(() -> productService.setStock(OTHER_SELLER, skuId, 9, null))
+			.isInstanceOf(ApiException.class);
+	}
+
+	@Test
 	void stockCannotDropBelowReserved() {
 		long productId = createProduct("키보드 " + uniq(), null, sku(ConditionGrade.RETURN_OPENED, 50_000L, 3));
 		long skuId = productService.getAdminProduct(SELLER, productId).skus().getFirst().id();

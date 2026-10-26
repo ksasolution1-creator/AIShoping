@@ -87,6 +87,22 @@ public class InventoryRepository {
 	 *
 	 * @return 반영 여부
 	 */
+	/** SKU의 전체 보유·예약 수량 (모든 위치 합). 행을 잠가 동시에 바꾸는 요청과 엇갈리지 않게 한다 */
+	public int[] lockTotals(long skuId) {
+		var rows = dsl.select(INVENTORIES.ON_HAND, INVENTORIES.RESERVED)
+			.from(INVENTORIES)
+			.where(INVENTORIES.SKU_ID.eq(skuId))
+			.forUpdate()
+			.fetch();
+		int onHand = 0;
+		int reserved = 0;
+		for (var r : rows) {
+			onHand += r.value1();
+			reserved += r.value2();
+		}
+		return new int[] { onHand, reserved };
+	}
+
 	public boolean changeOnHand(long skuId, long locationId, int qty) {
 		if (qty >= 0) {
 			dsl.insertInto(INVENTORIES)

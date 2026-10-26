@@ -200,6 +200,28 @@ public class ProductService {
 		products.updateSkuPrice(skuId, price);
 	}
 
+	/**
+	 * 목록에서 재고를 "몇 개로" 맞춘다. 지금 수량과의 차이만큼 기본 창고에서 입고·차감하고 조정 기록을 남긴다.
+	 * 주문이 잡아 둔 수량보다 적게는 줄일 수 없다.
+	 *
+	 * @return 바꾼 뒤 {보유, 예약}
+	 */
+	@Transactional
+	public int[] setStock(long sellerId, long skuId, int target, String memo) {
+		products.findProductIdOfSku(sellerId, skuId).orElseThrow(() -> ApiException.notFound("SKU"));
+		int[] totals = inventory.lockTotals(skuId);
+		if (target < totals[1]) {
+			throw ApiException.conflict("INSUFFICIENT_STOCK",
+					"주문이 잡아 둔 " + totals[1] + "개보다 적게 줄일 수 없습니다.");
+		}
+		int delta = target - totals[0];
+		if (delta != 0) {
+			adjustStock(sellerId, skuId, new AdjustStock(null, delta,
+					isBlank(memo) ? "상품 목록에서 " + totals[0] + "개 → " + target + "개" : memo));
+		}
+		return new int[] { target, totals[1] };
+	}
+
 	/** 재고 수동 조정. qty가 양수면 입고, 음수면 차감 */
 	@Transactional
 	public void adjustStock(long sellerId, long skuId, AdjustStock request) {

@@ -69,6 +69,11 @@ public final class CatalogRequests {
 	public record DeleteProducts(@NotEmpty @Size(max = 100) List<Long> ids) {
 	}
 
+	public record SetStock(
+			@NotNull(message = "재고 수량을 입력해 주세요.") @Min(0) @Max(100_000) Integer qty,
+			@Size(max = 200) String memo) {
+	}
+
 	public record ChangePrice(@NotNull(message = "판매가를 입력해 주세요.") @PositiveOrZero Long price) {
 	}
 

@@ -58,7 +58,15 @@ export type AdminProductRow = {
   skus: ListSku[];
 };
 
-export type ListSku = { skuId: number; optionText: string | null; grade: Grade; price: number };
+export type ListSku = {
+  skuId: number;
+  optionText: string | null;
+  grade: Grade;
+  price: number;
+  onHand: number;
+  /** 입금 대기·출고 전 주문이 잡아 둔 수량 */
+  reserved: number;
+};
 
 export type AdminSku = {
   id: number;
@@ -423,6 +431,12 @@ export const api = {
       status: SkuStatus;
     },
   ) => request<void>(`/api/admin/skus/${skuId}`, { method: "PUT", body: JSON.stringify(body) }),
+  /** 재고를 qty개로 맞춘다 (차이만큼 입고·차감 기록) */
+  setStock: (skuId: number, qty: number) =>
+    request<{ onHand: number; reserved: number }>(`/api/admin/skus/${skuId}/stock`, {
+      method: "PUT",
+      body: JSON.stringify({ qty }),
+    }),
   changeSkuPrice: (skuId: number, price: number) =>
     request<void>(`/api/admin/skus/${skuId}/price`, { method: "PATCH", body: JSON.stringify({ price }) }),
   changeSkuGrade: (skuId: number, conditionGrade: GradeCode) =>

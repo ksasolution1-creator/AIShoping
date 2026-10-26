@@ -244,12 +244,16 @@ public class ProductRepository {
 		if (productIds.isEmpty()) {
 			return Map.of();
 		}
-		return dsl.select(SKUS.PRODUCT_ID, SKUS.ID, SKUS.OPTION_VALUES, SKUS.CONDITION_GRADE, SKUS.PRICE)
+		Field<BigDecimal> onHand = field(select(coalesce(sum(INVENTORIES.ON_HAND), BigDecimal.ZERO))
+			.from(INVENTORIES).where(INVENTORIES.SKU_ID.eq(SKUS.ID)));
+		Field<BigDecimal> reserved = field(select(coalesce(sum(INVENTORIES.RESERVED), BigDecimal.ZERO))
+			.from(INVENTORIES).where(INVENTORIES.SKU_ID.eq(SKUS.ID)));
+		return dsl.select(SKUS.PRODUCT_ID, SKUS.ID, SKUS.OPTION_VALUES, SKUS.CONDITION_GRADE, SKUS.PRICE, onHand, reserved)
 			.from(SKUS)
 			.where(SKUS.PRODUCT_ID.in(productIds), SKUS.STATUS.ne(DELETED_SKU))
 			.orderBy(SKUS.ID)
 			.fetchGroups(r -> r.value1(), r -> new ListSku(r.value2(), optionText(jsonb.toStringMap(r.value3())),
-					Grade.of(ConditionGrade.valueOf(r.value4())), r.value5()));
+					Grade.of(ConditionGrade.valueOf(r.value4())), r.value5(), toInt(r.value6()), toInt(r.value7())));
 	}
 
 	private static String optionText(Map<String, String> options) {

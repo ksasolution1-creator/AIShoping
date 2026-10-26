@@ -29,6 +29,7 @@ import com.aishop.api.catalog.CatalogRequests.CreateProduct;
 import com.aishop.api.catalog.CatalogRequests.CreateSku;
 import com.aishop.api.catalog.CatalogRequests.DeleteProducts;
 import com.aishop.api.catalog.CatalogRequests.ProductFields;
+import com.aishop.api.catalog.CatalogRequests.SetStock;
 import com.aishop.api.catalog.CatalogRequests.UpdateSku;
 import com.aishop.api.catalog.CatalogViews.AdminProductDetail;
 import com.aishop.api.catalog.CatalogViews.AdminProductRow;
@@ -164,6 +165,13 @@ public class AdminProductController {
 	@PatchMapping("/skus/{skuId}/price")
 	public void changePrice(@PathVariable long skuId, @Valid @RequestBody ChangePrice request) {
 		productService.changeSkuPrice(admin.sellerId(), skuId, request.price());
+	}
+
+	/** 재고를 입력한 수량으로 맞춘다 (상품 목록) */
+	@PutMapping("/skus/{skuId}/stock")
+	public Map<String, Integer> setStock(@PathVariable long skuId, @Valid @RequestBody SetStock request) {
+		int[] result = productService.setStock(admin.sellerId(), skuId, request.qty(), request.memo());
+		return Map.of("onHand", result[0], "reserved", result[1]);
 	}
 
 	@PostMapping("/skus/{skuId}/stock-adjustments")
